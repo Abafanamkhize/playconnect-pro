@@ -1,29 +1,30 @@
 import express from 'express';
-import { register, login, getProfile } from '../controllers/authController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-
 const router = express.Router();
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
-
-// Protected routes
-router.get('/profile', authenticateToken, getProfile);
-
-// Role-based example endpoints
-router.get('/admin-only', authenticateToken, (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-  res.json({ message: 'Welcome admin!' });
+// Federation registration endpoint
+router.post('/register/federation', (req, res) => {
+  res.status(201).json({
+    success: true,
+    message: 'Federation registration endpoint - ready for implementation',
+    data: { federationId: 'FED-' + Date.now(), status: 'pending' }
+  });
 });
 
-router.get('/federation-dashboard', authenticateToken, (req, res) => {
-  if (req.user.role !== 'federation') {
-    return res.status(403).json({ error: 'Federation access required' });
-  }
-  res.json({ message: 'Federation dashboard access granted' });
+// User login endpoint
+router.post('/login', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Login endpoint - ready for implementation',
+    token: 'demo-jwt-token'
+  });
+});
+
+// Token verification endpoint
+router.post('/verify', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Token verification endpoint - ready for implementation'
+  });
 });
 
 export default router;
