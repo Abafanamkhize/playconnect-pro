@@ -1,24 +1,25 @@
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 
-export const generateToken = (userId, role) => {
-  return jwt.sign(
-    { userId, role },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
-  );
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+export const generateToken = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { 
+    expiresIn: JWT_EXPIRES_IN 
+  });
 };
 
 export const verifyToken = (token) => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     throw new Error('Invalid or expired token');
   }
 };
 
-export const extractTokenFromHeader = (authHeader) => {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  return authHeader.split(' ')[1];
+export const decodeToken = (token) => {
+  return jwt.decode(token);
 };
