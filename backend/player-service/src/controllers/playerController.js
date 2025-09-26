@@ -1,133 +1,173 @@
 import Player from '../models/Player.js';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
 
+// Create a new player
 export const createPlayer = async (req, res) => {
   try {
-    const playerData = req.body;
+    const { firstName, lastName, age, position, region, federationId } = req.body;
     
-    if (!playerData.federationId || !playerData.federationPlayerId) {
-      return res.status(400).json({ 
-        error: 'Federation ID and Player ID are required' 
+    // Basic validation
+    if (!firstName || !lastName || !age || !position || !region || !federationId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: firstName, lastName, age, position, region, federationId'
       });
     }
 
-    const existingPlayer = await Player.findOne({
-      federationId: playerData.federationId,
-      federationPlayerId: playerData.federationPlayerId
+    const player = await Player.create({
+      firstName,
+      lastName,
+      age: parseInt(age),
+      position,
+      region,
+      federationId,
+      isVerified: false,
+      performanceScore: 0.0
     });
 
-    if (existingPlayer) {
-      return res.status(400).json({ 
-        error: 'Player ID already exists in this federation' 
-      });
-    }
-
-    const player = new Player(playerData);
-    await player.save();
-    
-    await player.populate('federationId', 'name country region');
-    
     res.status(201).json({
+      success: true,
       message: 'Player created successfully',
-      player
+      data: player
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Create player error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating player',
+      error: error.message
+    });
   }
 };
 
-export const getPlayersByFederation = async (req, res) => {
+// Get all players with filtering and pagination
+export const getPlayers = async (req, res) => {
   try {
-    const { federationId } = req.params;
-    const { page = 1, limit = 50 } = req.query;
-    
-    if (!mongoose.Types.ObjectId.isValid(federationId)) {
-      return res.status(400).json({ error: 'Invalid federation ID' });
-    }
+    const { page = 1, limit = 10, position, region, search } = req.query;
+    const offset = (page - 1) * limit;
 
-    const players = await Player.find({ federationId })
-      .populate('federationId', 'name country region')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
-
-    const total = await Player.countDocuments({ federationId });
-
-    res.json({
-      players,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      total
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch players' });
-  }
-};
-
-export const updatePlayerVerification = async (req, res) => {
-  try {
-    const { playerId } = req.params;
-    const { status, notes } = req.body;
-
-    if (!['pending', 'verified', 'rejected', 'suspended'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-
-    const player = await Player.findByIdAndUpdate(
-      playerId,
-      {
-        'federationVerification.status': status,
-        'federationVerification.notes': notes,
-        'federationVerification.verifiedAt': status !== 'pending' ? new Date() : null
-      },
-      { new: true }
-    ).populate('federationId', 'name country region');
-
-    if (!player) {
-      return res.status(404).json({ error: 'Player not found' });
-    }
-
-    res.json({
-      message: `Player status updated to ${status}`,
-      player
-    });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const searchPlayers = async (req, res) => {
-  try {
-    const { name, sport, page = 1, limit = 25 } = req.query;
-    
-    let query = {};
-
-    if (name) {
-      query.$or = [
-        { firstName: { $regex: name, $options: 'i' } },
-        { lastName: { $regex: name, $options: 'i' } }
+    // Build where clause for filters
+    const whereClause = {};
+    if (position) whereClause.position = position;
+    if (region) whereClause.region = region;
+    if (search) {
+      whereClause[Op.or] = [
+        { firstName: { [Op.iLike]: `%${search}%` } },
+        { lastName: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
-    if (sport) {
-      query['sports.sport'] = sport;
-    }
-
-    const players = await Player.find(query)
-      .populate('federationId', 'name country region')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
-
-    const total = await Player.countDocuments(query);
+    const players = await Player.findAndCountAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']]
+    });
 
     res.json({
-      players,
-      totalPages: Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      total
+      success: true,
+      data: players.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(players.count / limit),
+        totalPlayers: players.count,
+        hasNext: offset + players.rows.length < players.count,
+        hasPrev: page > 1
+      }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to search players' });
+    console.error('Get players error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching players',
+      error: error.message
+    });
+  }
+};
+
+// Get single player by ID
+export const getPlayerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const player = await Player.findByPk(id);
+    if (!player) {
+      return res.status(404).json({
+        success: false,
+        message: 'Player not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: player
+    });
+  } catch (error) {
+    console.error('Get player error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching player',
+      error: error.message
+    });
+  }
+};
+
+// Update player
+export const updatePlayer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const player = await Player.findByPk(id);
+    if (!player) {
+      return res.status(404).json({
+        success: false,
+        message: 'Player not found'
+      });
+    }
+
+    await player.update(updates);
+
+    res.json({
+      success: true,
+      message: 'Player updated successfully',
+      data: player
+    });
+  } catch (error) {
+    console.error('Update player error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating player',
+      error: error.message
+    });
+  }
+};
+
+// Delete player
+export const deletePlayer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const player = await Player.findByPk(id);
+    if (!player) {
+      return res.status(404).json({
+        success: false,
+        message: 'Player not found'
+      });
+    }
+
+    await player.destroy();
+
+    res.json({
+      success: true,
+      message: 'Player deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete player error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting player',
+      error: error.message
+    });
   }
 };

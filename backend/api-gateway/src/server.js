@@ -1,13 +1,9 @@
 import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-app.use(helmet());
-app.use(cors());
 app.use(express.json());
 
 // Service endpoints
@@ -17,20 +13,79 @@ const services = {
   federations: 'http://localhost:3003'
 };
 
-// Proxy middleware
-app.use('/api/auth', createProxyMiddleware({ target: services.auth, changeOrigin: true }));
-app.use('/api/players', createProxyMiddleware({ target: services.players, changeOrigin: true }));
-app.use('/api/federations', createProxyMiddleware({ target: services.federations, changeOrigin: true }));
+// SIMPLE PROXY - Map to whatever endpoints actually exist
+app.use('/api/auth', createProxyMiddleware({ 
+  target: services.auth,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/auth': ''  // Remove /api/auth prefix - route to service root
+  }
+}));
 
-// Health check
+app.use('/api/players', createProxyMiddleware({ 
+  target: services.players,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/players': ''  // Remove /api/players prefix
+  }
+}));
+
+app.use('/api/federations', createProxyMiddleware({ 
+  target: services.federations,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/federations': ''  // Remove /api/federations prefix
+  }
+}));
+
+// Direct health check endpoints
+app.get('/health/auth', createProxyMiddleware({
+  target: services.auth,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/health/auth': '/health'  // Map to service's /health
+  }
+}));
+
+app.get('/health/players', createProxyMiddleware({
+  target: services.players, 
+  changeOrigin: true,
+  pathRewrite: {
+    '^/health/players': '/health'
+  }
+}));
+
+app.get('/health/federations', createProxyMiddleware({
+  target: services.federations,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/health/federations': '/health'
+  }
+}));
+
+// Gateway health
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'API Gateway', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    service: 'API Gateway',
+    timestamp: new Date().toISOString()
+  });
 });
 
+// Root with simple instructions
 app.get('/', (req, res) => {
-  res.json({ message: 'PlayConnect API Gateway', version: '1.0.0' });
+  res.json({
+    message: 'PlayConnect API Gateway - Simple Proxy Mode',
+    instructions: 'Using path rewriting to match actual service endpoints',
+    testEndpoints: {
+      authHealth: '/health/auth',
+      playersHealth: '/health/players', 
+      federationsHealth: '/health/federations',
+      createPlayer: 'POST /api/players with JSON body'
+    }
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`🌐 API Gateway running on port ${PORT}`);
+  console.log(`🌐 API Gateway (Simple Mode) on port ${PORT}`);
 });

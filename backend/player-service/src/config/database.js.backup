@@ -1,0 +1,23 @@
+import { Sequelize } from 'sequelize';
+
+const sequelize = new Sequelize('playconnect', 'playconnect_user', null, {
+  host: 'localhost',
+  dialect: 'postgres',
+  logging: false,
+});
+
+async function initializeDatabase() {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ PostgreSQL connection established successfully.');
+    
+    // Don't sync tables since we created them manually
+    console.log('✅ Using existing database tables');
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+  }
+}
+
+initializeDatabase();
+
+export default sequelize;

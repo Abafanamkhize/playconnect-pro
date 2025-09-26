@@ -1,35 +1,35 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
-const Federation = sequelize.define('Federation', {
+const Match = sequelize.define('Match', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  country: {
-    type: DataTypes.STRING,
+  matchDate: {
+    type: DataTypes.DATE,
     allowNull: false,
   },
-  verificationStatus: {
+  location: {
     type: DataTypes.STRING,
-    defaultValue: 'pending',
-    validate: {
-      isIn: [['pending', 'verified', 'rejected']]
-    }
   },
-  adminUserId: {
+  opponent: {
+    type: DataTypes.STRING,
+  },
+  result: {
+    type: DataTypes.STRING,
+  },
+  videoUrl: {
+    type: DataTypes.STRING,
+  },
+  federationId: {
     type: DataTypes.UUID,
     allowNull: false,
   },
 }, {
-  tableName: 'federations',
+  tableName: 'matches',
   timestamps: true,
 });
 
-export default Federation;
+export default Match;
