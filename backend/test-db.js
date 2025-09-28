@@ -1,30 +1,14 @@
-const { Sequelize, DataTypes } = require('sequelize');
-const config = require('./config/config.json').development;
+const db = require('./models');
 
-const sequelize = new Sequelize(config.database, config.username, config.password, {
-  host: config.host,
-  dialect: config.dialect
-});
-
-// Import models properly
-const Player = require('./models/player');
-const Federation = require('./models/federation'); 
-const User = require('./models/user');
-
-async function testConnection() {
+async function testDB() {
   try {
-    await sequelize.authenticate();
+    await db.sequelize.authenticate();
     console.log('✅ Database connection successful!');
     
-    // Initialize models
-    Player(sequelize, DataTypes);
-    Federation(sequelize, DataTypes);
-    User(sequelize, DataTypes);
+    await db.sequelize.sync();
+    console.log('✅ All models synchronized!');
     
-    // Test associations
-    await sequelize.sync({ force: false });
-    console.log('✅ All models synchronized successfully!');
-    
+    console.log('🎉 Database layer completed successfully!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error.message);
@@ -32,4 +16,4 @@ async function testConnection() {
   }
 }
 
-testConnection();
+testDB();
