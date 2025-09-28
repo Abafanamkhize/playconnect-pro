@@ -12,11 +12,36 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   User.init({
-    email: DataTypes.STRING,
-    passwordHash: DataTypes.STRING,
-    role: DataTypes.STRING,
-    federationId: DataTypes.UUID,
-    isActive: DataTypes.BOOLEAN
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: true
+      }
+    },
+    passwordHash: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    role: {
+      type: DataTypes.ENUM('federation_admin', 'scout', 'player', 'system_admin'),
+      allowNull: false,
+      defaultValue: 'player'
+    },
+    federationId: {
+      type: DataTypes.UUID,
+      allowNull: true
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    }
   }, {
     sequelize,
     modelName: 'User',

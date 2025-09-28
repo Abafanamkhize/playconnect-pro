@@ -1,45 +1,136 @@
-import express from 'express';
-import cors from 'cors';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
+const cors = require('cors');
+const helmet = require('helmet');
+const db = require('../models');
 
 const app = express();
-const PORT = 3001;
-const JWT_SECRET = 'playconnect-secret-key';
+const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'playconnect_secret_key_2024';
 
+// Middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Mock user database (replace with real database)
-const users = [
-  {
-    id: 1,
-    email: 'admin@federation.com',
-    password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-    role: 'federation_admin',
-    federationId: 1
+// Input validation middleware
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
-];
+  next();
+};
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Auth Service' });
+// JWT verification middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Role-based authorization middleware
+const requireRole = (roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    next();
+  };
+};
+
+// User Registration Endpoint
+app.post('/api/auth/register', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('role').isIn(['federation_admin', 'scout', 'player']),
+  body('federationId').optional().isUUID()
+], validateRequest, async (req, res) => {
+  try {
+    const { email, password, role, federationId } = req.body;
+
+    // Check if user already exists
+    const existingUser = await db.User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Create user
+    const user = await db.User.create({
+      email,
+      passwordHash,
+      role,
+      federationId: role === 'federation_admin' ? federationId : null,
+      isActive: true
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role,
+        federationId: user.federationId 
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        federationId: user.federationId
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// Login endpoint
-app.post('/api/auth/login', async (req, res) => {
+// User Login Endpoint
+app.post('/api/auth/login', [
+  body('email').isEmail().normalizeEmail(),
+  body('password').exists()
+], validateRequest, async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // Find user
-    const user = users.find(u => u.email === email);
+    const user = await db.User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // In real app, compare hashed password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword && password !== 'admin123') {
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({ error: 'Account deactivated' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -56,6 +147,7 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     res.json({
+      message: 'Login successful',
       token,
       user: {
         id: user.id,
@@ -65,26 +157,19 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: 'Login failed' });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Verify token endpoint
-app.post('/api/auth/verify', (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ valid: true, user: decoded });
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
+// Health Check
+app.get('/health', (req, res) => {
+  res.json({ status: 'Auth Service Running', timestamp: new Date().toISOString() });
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`🔐 Auth Service running on port ${PORT}`);
+  console.log(`🔐 Authentication service running on port ${PORT}`);
 });
+
+module.exports = app;
