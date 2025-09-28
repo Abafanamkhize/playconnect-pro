@@ -4,11 +4,29 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const cors = require('cors');
 const helmet = require('helmet');
-const db = require('../models');
+const { Sequelize, DataTypes } = require('sequelize');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'playconnect_secret_key_2024';
+
+// Database configuration
+const config = require('../config/config.json').development;
+const sequelize = new Sequelize(config.database, config.username, config.password, {
+  host: config.host,
+  dialect: config.dialect,
+  logging: false
+});
+
+// Import models manually
+const Player = require('../models/player')(sequelize, DataTypes);
+const Federation = require('../models/federation')(sequelize, DataTypes);
+const User = require('../models/user')(sequelize, DataTypes);
+
+// Set up associations
+Player.associate({ Federation });
+Federation.associate({ Player });
+User.associate({ Federation });
 
 // Middleware
 app.use(helmet());
@@ -63,7 +81,7 @@ app.post('/api/auth/register', [
     const { email, password, role, federationId } = req.body;
 
     // Check if user already exists
-    const existingUser = await db.User.findOne({ where: { email } });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -73,7 +91,7 @@ app.post('/api/auth/register', [
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Create user
-    const user = await db.User.create({
+    const user = await User.create({
       email,
       passwordHash,
       role,
@@ -118,7 +136,7 @@ app.post('/api/auth/login', [
     const { email, password } = req.body;
 
     // Find user
-    const user = await db.User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -162,14 +180,53 @@ app.post('/api/auth/login', [
   }
 });
 
+// Protected Test Route
+app.get('/api/auth/protected', authenticateToken, (req, res) => {
+  res.json({ 
+    message: 'Access granted to protected route',
+    user: req.user 
+  });
+});
+
+// Federation Admin Only Route
+app.get('/api/auth/federation-only', 
+  authenticateToken, 
+  requireRole(['federation_admin']),
+  (req, res) => {
+    res.json({ 
+      message: 'Access granted to federation admin route',
+      user: req.user 
+    });
+  }
+);
+
 // Health Check
-app.get('/health', (req, res) => {
-  res.json({ status: 'Auth Service Running', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({ 
+      status: 'Auth Service Running - Database Connected', 
+      timestamp: new Date().toISOString() 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'Auth Service Running - Database Error', 
+      error: error.message 
+    });
+  }
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🔐 Authentication service running on port ${PORT}`);
+app.listen(PORT, async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
+    await sequelize.sync();
+    console.log('✅ Database synchronized');
+    console.log(`🔐 Authentication service running on port ${PORT}`);
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+  }
 });
 
 module.exports = app;
