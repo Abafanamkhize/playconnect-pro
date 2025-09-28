@@ -1,0 +1,22 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": null,
+    "database": "playconnect_dev",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432
+  },
+  "test": {
+    "username": "postgres",
+    "password": null,
+    "database": "playconnect_test",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432
+  },
+  "production": {
+    "use_env_variable": "DATABASE_URL",
+    "dialect": "postgres"
+  }
+}

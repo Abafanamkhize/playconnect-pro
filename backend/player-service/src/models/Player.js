@@ -1,59 +1,47 @@
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../config/database.js';
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
 const Player = sequelize.define('Player', {
   id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    field: 'id'
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
   firstName: {
     type: DataTypes.STRING,
-    allowNull: false,
-    field: 'firstName'
+    allowNull: false
   },
   lastName: {
     type: DataTypes.STRING,
-    allowNull: false,
-    field: 'lastName'
+    allowNull: false
   },
-  age: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'age'
+  dateOfBirth: {
+    type: DataTypes.DATE,
+    allowNull: false
   },
   position: {
     type: DataTypes.STRING,
-    allowNull: false,
-    field: 'position'
-  },
-  region: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: 'region'
+    allowNull: false
   },
   federationId: {
-    type: DataTypes.STRING,  // Note: This is string in your table, not UUID
-    allowNull: false,
-    field: 'federationId'
+    type: DataTypes.UUID,
+    allowNull: false
+  },
+  stats: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
+  },
+  videos: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
   },
   isVerified: {
     type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    field: 'isVerified'
-  },
-  performanceScore: {
-    type: DataTypes.FLOAT,
-    defaultValue: 0.0,
-    field: 'performanceScore'
+    defaultValue: false
   }
 }, {
-  tableName: 'players',
   timestamps: true,
-  underscored: false,  // Your columns use camelCase
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  tableName: 'players'
 });
 
-export default Player;
+module.exports = Player;
