@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { RootState } from '../app/store';
 import PlayerManagement from './PlayerManagement';
+import VideoManagement from './VideoManagement';
 
 const drawerWidth = 240;
 
@@ -41,7 +42,7 @@ const Dashboard = () => {
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, value: 'dashboard' },
     { text: 'Player Management', icon: <People />, value: 'players' },
-    { text: 'Video Library', icon: <VideoLibrary />, value: 'videos' },
+    { text: 'Video Management', icon: <VideoLibrary />, value: 'videos' },
     { text: 'Analytics', icon: <Analytics />, value: 'analytics' },
     { text: 'Settings', icon: <Settings />, value: 'settings' },
   ];
@@ -50,6 +51,8 @@ const Dashboard = () => {
     switch (activeTab) {
       case 'players':
         return <PlayerManagement />;
+      case 'videos':
+        return <VideoManagement />;
       case 'dashboard':
       default:
         return (

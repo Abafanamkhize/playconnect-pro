@@ -70,7 +70,6 @@ const PlayerManagement = () => {
   });
 
   const positions = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'];
-  const skillOptions = ['Speed', 'Dribbling', 'Shooting', 'Passing', 'Vision', 'Tackling', 'Strength', 'Stamina'];
 
   useEffect(() => {
     // TODO: Fetch players from API
