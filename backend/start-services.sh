@@ -1,12 +1,8 @@
 #!/bin/bash
+echo "🚀 Starting PlayConnect Backend Services..."
 
-echo "🚀 Starting PlayConnect Backend Microservices..."
-
-# Kill any existing node processes on these ports
-echo "🔄 Stopping any existing services..."
-pkill -f "node server.js" || true
-
-# Wait a moment for processes to stop
+# Kill any existing node processes
+pkill -f "node server.js" 2>/dev/null || true
 sleep 2
 
 # Start services
@@ -42,18 +38,13 @@ echo $AUTH_PID >> services.pid
 echo $PLAYER_PID >> services.pid
 echo $FEDERATION_PID >> services.pid
 
-echo "🎉 All services started successfully!"
+echo "🎉 All services started!"
 echo "📊 Service Status:"
 echo "   - API Gateway: http://localhost:3000"
-echo "   - Auth Service: http://localhost:3001" 
+echo "   - Auth Service: http://localhost:3001"
 echo "   - Player Service: http://localhost:3003"
 echo "   - Federation Service: http://localhost:3004"
 
-# Wait a bit for services to initialize
+# Wait and test
 sleep 3
-
-# Test the gateway
-echo "🧪 Testing API Gateway..."
 curl -s http://localhost:3000/api/health || echo "❌ Gateway not ready yet"
-
-echo "✨ Services are starting up... Check logs above for any errors."
