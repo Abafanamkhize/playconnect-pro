@@ -18,7 +18,6 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  Grid,
   Card,
   CardContent
 } from '@mui/material';
@@ -161,57 +160,49 @@ const PlayerManagement = () => {
         </Button>
       </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Players
-              </Typography>
-              <Typography variant="h4">
-                {players.length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Active Players
-              </Typography>
-              <Typography variant="h4">
-                {players.filter(p => p.status === 'active').length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Pending Verification
-              </Typography>
-              <Typography variant="h4">
-                {players.filter(p => p.status === 'pending').length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Videos
-              </Typography>
-              <Typography variant="h4">
-                {players.reduce((acc, p) => acc + p.videos, 0)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Stats Cards - Using simple Box layout instead of Grid */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Total Players
+            </Typography>
+            <Typography variant="h4">
+              {players.length}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Active Players
+            </Typography>
+            <Typography variant="h4">
+              {players.filter(p => p.status === 'active').length}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Pending Verification
+            </Typography>
+            <Typography variant="h4">
+              {players.filter(p => p.status === 'pending').length}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Total Videos
+            </Typography>
+            <Typography variant="h4">
+              {players.reduce((acc, p) => acc + p.videos, 0)}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Players Table */}
       <TableContainer component={Paper}>
@@ -284,17 +275,15 @@ const PlayerManagement = () => {
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={6}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField
                   fullWidth
                   label="Age"
@@ -303,8 +292,6 @@ const PlayerManagement = () => {
                   onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                   required
                 />
-              </Grid>
-              <Grid item xs={6}>
                 <TextField
                   fullWidth
                   select
@@ -319,27 +306,23 @@ const PlayerManagement = () => {
                     </MenuItem>
                   ))}
                 </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Nationality"
-                  value={formData.nationality}
-                  onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Skills (comma separated)"
-                  value={formData.skills}
-                  onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                  placeholder="Speed, Dribbling, Shooting"
-                  helperText="Separate skills with commas"
-                />
-              </Grid>
-            </Grid>
+              </Box>
+              <TextField
+                fullWidth
+                label="Nationality"
+                value={formData.nationality}
+                onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+                required
+              />
+              <TextField
+                fullWidth
+                label="Skills (comma separated)"
+                value={formData.skills}
+                onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                placeholder="Speed, Dribbling, Shooting"
+                helperText="Separate skills with commas"
+              />
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
