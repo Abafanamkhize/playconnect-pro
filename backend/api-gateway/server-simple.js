@@ -50,28 +50,39 @@ app.get('/api/status', async (req, res) => {
 });
 
 // Proxy middleware for each service
-
-// Auth Service: /api/auth/* -> /api/*
 app.use('/api/auth', createProxyMiddleware({
   target: services.auth,
   changeOrigin: true,
   pathRewrite: {
     '^/api/auth': '/api'
+  },
+  onError: (err, req, res) => {
+    console.error('Auth service error:', err);
+    res.status(503).json({ error: 'Authentication service unavailable' });
   }
 }));
 
-// Player Service: /api/players/* -> /api/players/*
 app.use('/api/players', createProxyMiddleware({
   target: services.players,
-  changeOrigin: true
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/players': '/api/players'
+  },
+  onError: (err, req, res) => {
+    console.error('Player service error:', err);
+    res.status(503).json({ error: 'Player service unavailable' });
+  }
 }));
 
-// Federation Service: /api/federation/* -> /*
 app.use('/api/federation', createProxyMiddleware({
   target: services.federation,
   changeOrigin: true,
   pathRewrite: {
-    '^/api/federation': ''
+    '^/api/federation': '/api'
+  },
+  onError: (err, req, res) => {
+    console.error('Federation service error:', err);
+    res.status(503).json({ error: 'Federation service unavailable' });
   }
 }));
 
