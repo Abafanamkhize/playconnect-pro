@@ -7,6 +7,8 @@ const db = require('../models');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+console.log('🔧 Starting Player Service in debug mode...');
+
 // Middleware
 app.use(helmet());
 app.use(cors());
@@ -25,7 +27,7 @@ const authenticateToken = (req, res, next) => {
   req.user = { 
     role: 'federation_admin',
     federationId: '550e8400-e29b-41d4-a716-446655440000'
-  }; // Temporary for development
+  };
   next();
 };
 
@@ -52,13 +54,17 @@ const playerCreateSchema = Joi.object({
 
 // Create Player (Federation Admin Only)
 app.post('/api/players', authenticateToken, requireFederationAdmin, async (req, res) => {
+  console.log('📝 Player creation attempt');
   try {
     // Validate input
     const { error, value } = playerCreateSchema.validate(req.body);
     if (error) {
+      console.log('❌ Validation error:', error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
+    console.log('✅ Input validated, creating player...');
+    
     // Create player with federation verification
     const player = await db.Player.create({
       ...value,
@@ -67,6 +73,8 @@ app.post('/api/players', authenticateToken, requireFederationAdmin, async (req, 
       isActive: true
     });
 
+    console.log('✅ Player created:', player.id);
+    
     res.status(201).json({
       message: 'Player created successfully',
       player: {
@@ -81,13 +89,14 @@ app.post('/api/players', authenticateToken, requireFederationAdmin, async (req, 
       }
     });
   } catch (error) {
-    console.error('Player creation error:', error);
+    console.error('❌ Player creation error:', error);
     res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 });
 
 // Get All Players (with filtering and pagination)
 app.get('/api/players', async (req, res) => {
+  console.log('📋 Get players request');
   try {
     const { page = 1, limit = 10, position, sport, nationality } = req.query;
     const offset = (page - 1) * limit;
@@ -98,6 +107,8 @@ app.get('/api/players', async (req, res) => {
     if (sport) whereClause.sport = sport;
     if (nationality) whereClause.nationality = nationality;
 
+    console.log('🔍 Querying players with filters:', whereClause);
+    
     const players = await db.Player.findAndCountAll({
       where: whereClause,
       limit: parseInt(limit),
@@ -110,6 +121,8 @@ app.get('/api/players', async (req, res) => {
       }]
     });
 
+    console.log('✅ Found', players.count, 'players');
+    
     res.json({
       players: players.rows,
       pagination: {
@@ -121,34 +134,8 @@ app.get('/api/players', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get players error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get Player by ID
-app.get('/api/players/:id', async (req, res) => {
-  try {
-    const player = await db.Player.findOne({
-      where: { 
-        id: req.params.id,
-        isActive: true 
-      },
-      include: [{
-        model: db.Federation,
-        as: 'federation',
-        attributes: ['id', 'name', 'country']
-      }]
-    });
-
-    if (!player) {
-      return res.status(404).json({ error: 'Player not found' });
-    }
-
-    res.json({ player });
-  } catch (error) {
-    console.error('Get player error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Get players error:', error);
+    res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 });
 
