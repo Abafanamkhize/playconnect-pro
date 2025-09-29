@@ -27,6 +27,26 @@ const services = {
   federation: process.env.FEDERATION_SERVICE_URL || 'http://localhost:3005'
 };
 
+const services = {
+  auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3002',
+  players: process.env.PLAYER_SERVICE_URL || 'http://localhost:3003',
+  search: process.env.SEARCH_SERVICE_URL || 'http://localhost:3004',
+  federation: process.env.FEDERATION_SERVICE_URL || 'http://localhost:3005',
+  cache: process.env.CACHE_SERVICE_URL || 'http://localhost:3006'  // Add this line
+};
+
+app.use('/api/cache', createProxyMiddleware({
+  target: services.cache,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/cache': ''
+  },
+  onError: (err, req, res) => {
+    console.error('Cache service error:', err);
+    res.status(503).json({ error: 'Cache service unavailable' });
+  }
+}));
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 

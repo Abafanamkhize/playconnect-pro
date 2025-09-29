@@ -1,0 +1,31 @@
+const sequelize = require('../config/database');
+
+const createIndexes = async () => {
+  try {
+    console.log('Creating database indexes for optimization...');
+    
+    // Player table indexes
+    await sequelize.query(`
+      CREATE INDEX IF NOT EXISTS idx_players_position ON "Players" ("position");
+      CREATE INDEX IF NOT EXISTS idx_players_nationality ON "Players" ("nationality");
+      CREATE INDEX IF NOT EXISTS idx_players_verification ON "Players" ("verificationStatus");
+      CREATE INDEX IF NOT EXISTS idx_players_federation ON "Players" ("federationId");
+      CREATE INDEX IF NOT EXISTS idx_players_created_at ON "Players" ("createdAt" DESC);
+    `);
+    
+    // Federation table indexes
+    await sequelize.query(`
+      CREATE INDEX IF NOT EXISTS idx_federations_country ON "Federations" ("country");
+      CREATE INDEX IF NOT EXISTS idx_federations_sport ON "Federations" ("sport");
+      CREATE INDEX IF NOT EXISTS idx_federations_verification ON "Federations" ("verificationLevel");
+    `);
+    
+    console.log('Database indexes created successfully!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Error creating indexes:', error);
+    process.exit(1);
+  }
+};
+
+createIndexes();
