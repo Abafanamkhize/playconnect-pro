@@ -1,12 +1,10 @@
-import { Sequelize } from 'sequelize';
-import dotenv from 'dotenv';
-
-dotenv.config();
+const { Sequelize } = require('sequelize');
+require('dotenv').config();
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'playconnect',
-  process.env.DB_USER || 'playconnect_user',
-  process.env.DB_PASSWORD || 'playconnect123',
+  process.env.DB_NAME || 'playconnect_auth',
+  process.env.DB_USER || 'postgres',
+  process.env.DB_PASSWORD || 'password',
   {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
@@ -21,15 +19,4 @@ const sequelize = new Sequelize(
   }
 );
 
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Auth Service Database connection established successfully.');
-    return true;
-  } catch (error) {
-    console.error('❌ Auth Service: Unable to connect to the database:', error);
-    return false;
-  }
-};
-
-export { sequelize, testConnection };
+module.exports = { sequelize };

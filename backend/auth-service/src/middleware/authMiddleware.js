@@ -1,65 +1,46 @@
-import { verifyToken } from '../utils/jwtUtils.js';
-import User from '../models/User.js';
+const jwt = require('jsonwebtoken');
+const { User } = require('../models/User');
 
-export const authenticateToken = async (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access token required'
-      });
-    }
-
-    const decoded = verifyToken(token);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     const user = await User.findByPk(decoded.userId);
     
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found or account inactive'
-      });
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
     }
 
     req.user = {
-      userId: user.id,
+      id: user.id,
       email: user.email,
-      role: user.role,
-      federationId: user.federationId
+      role: user.role
     };
-
+    
     next();
   } catch (error) {
-    return res.status(403).json({
-      success: false,
-      message: 'Invalid or expired token',
-      error: error.message
-    });
+    return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
 
-export const requireRole = (roles) => {
+const requireRole = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Access denied. Required roles: ${roles.join(', ')}`
-      });
+      return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
     next();
   };
 };
 
-export const requireFederation = requireRole(['federation', 'admin']);
-export const requireScout = requireRole(['scout', 'admin']);
-export const requireAdmin = requireRole(['admin']);
+module.exports = { authenticateToken, requireRole };

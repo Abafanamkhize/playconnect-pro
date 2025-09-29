@@ -55,39 +55,62 @@ const User = sequelize.define('User', {
     field: 'createdat'  // Match exact column name
   },
   updatedAt: {
-    type: DataTypes.DATE,
-    field: 'updatedat'  // Match exact column name
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+const bcrypt = require('bcrypt');
+
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true
+    }
+  },
+  password_hash: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  role: {
+    type: DataTypes.ENUM('super_admin', 'federation_admin', 'team_coach', 'talent_scout', 'player'),
+    allowNull: false,
+    defaultValue: 'player'
+  },
+  is_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  federation_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'federations',
+      key: 'id'
+    }
   }
 }, {
-  tableName: 'users',
-  timestamps: true,  // Let Sequelize handle timestamps
-  underscored: false,  // We're explicitly defining field names
-  createdAt: 'createdat',
-  updatedAt: 'updatedat',
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
-        user.password = await bcrypt.hash(user.password, 12);
+        user.password_hash = await bcrypt.hash(user.password, 12);
       }
     },
     beforeUpdate: async (user) => {
       if (user.changed('password')) {
-        user.password = await bcrypt.hash(user.password, 12);
+        user.password_hash = await bcrypt.hash(user.password, 12);
       }
     }
   }
 });
 
-// Instance method to check password
 User.prototype.validatePassword = async function(password) {
-  return await bcrypt.compare(password, this.password);
+  return await bcrypt.compare(password, this.password_hash);
 };
 
-// Instance method to sanitize user data
-User.prototype.toJSON = function() {
-  const values = { ...this.get() };
-  delete values.password;
-  return values;
-};
-
-export default User;
+module.exports = User;
