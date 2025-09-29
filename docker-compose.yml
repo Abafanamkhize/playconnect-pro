@@ -1,7 +1,64 @@
 version: '3.8'
 services:
-  # ... existing services ...
-  
+  api-gateway:
+    build: ./backend/api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:3002
+      - PLAYER_SERVICE_URL=http://player-service:3003
+      - SEARCH_SERVICE_URL=http://search-service:3004
+      - FEDERATION_SERVICE_URL=http://federation-service:3005
+    depends_on:
+      - auth-service
+      - player-service
+      - search-service
+      - federation-service
+
+  auth-service:
+    build: ./backend/auth-service
+    ports:
+      - "3002:3002"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
+      - JWT_SECRET=your-super-secret-jwt-key-here
+
+  player-service:
+    build: ./backend/player-service
+    ports:
+      - "3003:3003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
+    volumes:
+      - ./backend/player-service/uploads:/app/uploads
+
+  search-service:
+    build: ./backend/search-service
+    ports:
+      - "3004:3004"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+  federation-service:
+    build: ./backend/federation-service
+    ports:
+      - "3005:3005"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
+
+  postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_DB=playconnect
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
     environment:
@@ -13,4 +70,5 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
 
 volumes:
+  postgres_data:
   elasticsearch_data:
