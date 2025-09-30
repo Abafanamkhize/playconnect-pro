@@ -1,115 +1,184 @@
-import React from 'react';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Box, CircularProgress, Typography } from '@mui/material';
+
+// Import components
+import EnhancedLogin from './components/EnhancedLogin';
+import ProfessionalDashboard from './components/ProfessionalDashboard';
+
+// Create comprehensive theme
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#1565c0',
+    },
+    secondary: {
+      main: '#dc004e',
+      light: '#ff5983',
+      dark: '#9a0036',
+    },
+    success: {
+      main: '#2e7d32',
+      light: '#4caf50',
+      dark: '#1b5e20',
+    },
+    warning: {
+      main: '#ed6c02',
+      light: '#ff9800',
+      dark: '#e65100',
+    },
+    background: {
+      default: '#f8f9fa',
+      paper: '#ffffff',
+    },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontSize: '3rem',
+      fontWeight: 800,
+    },
+    h2: {
+      fontSize: '2.25rem',
+      fontWeight: 700,
+    },
+    h3: {
+      fontSize: '1.75rem',
+      fontWeight: 600,
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+  },
+});
 
 function App() {
-  const handleStatusCheck = () => {
-    window.open('http://localhost:3006/api/status', '_blank');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const savedUser = localStorage.getItem('user');
+        
+        if (token && savedUser) {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  const handlePlayersCheck = () => {
-    window.open('http://localhost:3006/api/players', '_blank');
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
   };
 
-  const handleHealthCheck = () => {
-    window.open('http://localhost:3006/api/health', '_blank');
-  };
+  if (loading) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="100vh"
+          flexDirection="column"
+          sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }}
+        >
+          <CircularProgress size={60} sx={{ color: 'white', mb: 3 }} />
+          <Typography variant="h4" gutterBottom fontWeight="bold">
+            🎯 PlayConnect
+          </Typography>
+          <Typography variant="h6" sx={{ opacity: 0.8 }}>
+            Loading your professional dashboard...
+          </Typography>
+        </Box>
+      </ThemeProvider>
+    );
+  }
 
   return (
-    <div className="App" style={{ 
-      padding: '40px', 
-      textAlign: 'center',
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#f5f5f5',
-      minHeight: '100vh'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '10px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        maxWidth: '600px',
-        margin: '0 auto'
-      }}>
-        <h1 style={{ color: '#1976d2', fontSize: '2.5rem', marginBottom: '10px' }}>
-          🎯 PlayConnect
-        </h1>
-        <h2 style={{ color: '#333', fontSize: '1.5rem', marginBottom: '20px' }}>
-          Phase 2 - Integration Service Running
-        </h2>
-        
-        <div style={{ margin: '30px 0', padding: '20px', backgroundColor: '#e3f2fd', borderRadius: '8px' }}>
-          <h3 style={{ color: '#1976d2', marginBottom: '15px' }}>Backend Services</h3>
-          <p style={{ margin: '10px 0', fontSize: '1.1rem' }}>
-            <strong>Integration Service:</strong> http://localhost:3006
-          </p>
-          <p style={{ margin: '10px 0', fontSize: '1.1rem' }}>
-            <strong>Status:</strong> ✅ Running
-          </p>
-        </div>
-
-        <div style={{ marginTop: '30px' }}>
-          <h3 style={{ marginBottom: '20px', color: '#333' }}>Test Endpoints</h3>
-          <button 
-            onClick={handleStatusCheck}
-            style={{ 
-              padding: '12px 24px', 
-              margin: '8px',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
-          >
-            📊 Check Status
-          </button>
-          <button 
-            onClick={handlePlayersCheck}
-            style={{ 
-              padding: '12px 24px', 
-              margin: '8px',
-              backgroundColor: '#2e7d32',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
-          >
-            👥 View Players
-          </button>
-          <button 
-            onClick={handleHealthCheck}
-            style={{ 
-              padding: '12px 24px', 
-              margin: '8px',
-              backgroundColor: '#ed6c02',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
-          >
-            ❤️ Health Check
-          </button>
-        </div>
-
-        <div style={{ marginTop: '40px', padding: '20px', backgroundColor: '#f3e5f5', borderRadius: '8px' }}>
-          <h4 style={{ color: '#7b1fa2', marginBottom: '10px' }}>Next Steps</h4>
-          <p style={{ fontSize: '14px', color: '#666' }}>
-            Once the frontend dependencies are fully resolved, we'll integrate the complete dashboard with:
-          </p>
-          <ul style={{ textAlign: 'left', display: 'inline-block', color: '#666' }}>
-            <li>3-role authentication system</li>
-            <li>Player management dashboard</li>
-            <li>Scout discovery platform</li>
-            <li>Federation admin controls</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <Box className="App" sx={{ minHeight: '100vh' }}>
+          <Routes>
+            <Route 
+              path="/login" 
+              element={
+                user ? <Navigate to="/dashboard" replace /> : <EnhancedLogin onLogin={handleLogin} />
+              } 
+            />
+            
+            <Route 
+              path="/dashboard" 
+              element={
+                user ? <ProfessionalDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
+              } 
+            />
+            
+            <Route 
+              path="/" 
+              element={<Navigate to={user ? "/dashboard" : "/login"} replace />} 
+            />
+            
+            <Route 
+              path="*" 
+              element={<Navigate to={user ? "/dashboard" : "/login"} replace />} 
+            />
+          </Routes>
+        </Box>
+      </Router>
+    </ThemeProvider>
   );
 }
 
