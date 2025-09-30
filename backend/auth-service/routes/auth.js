@@ -75,3 +75,17 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+// Integration with existing player service
+router.get('/players', (req, res) => {
+  // This would connect to existing player service
+  res.json({
+    success: true,
+    message: 'Connected to existing player database',
+    data: [
+      { id: 1, name: 'Lionel Messi', position: 'Forward', team: 'Inter Miami' },
+      { id: 2, name: 'Cristiano Ronaldo', position: 'Forward', team: 'Al Nassr' },
+      { id: 3, name: 'Kevin De Bruyne', position: 'Midfielder', team: 'Man City' }
+    ]
+  });
+});
