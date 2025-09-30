@@ -1,62 +1,59 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
-import Dashboard from './components/Dashboard';
-import Login from './components/Login';
-import PlayerManagement from './components/PlayerManagement';
-import FederationManagement from './components/FederationManagement';
+import React, { useState, useEffect } from 'react';
+import Login from './components/auth/Login';
+import Dashboard from './components/dashboard/Dashboard';
 import './App.css';
 
 function App() {
-  const isAuthenticated = !!localStorage.getItem('authToken');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userRole');
-    window.location.href = '/login';
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+
+    if (token && userData) {
+      fetch('http://localhost:3003/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          setUser(JSON.parse(userData));
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
   };
 
-  return (
-    <Router>
-      <div className="App">
-        <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>
-                PlayConnect
-              </Link>
-            </Typography>
-            {isAuthenticated ? (
-              <>
-                <Button color="inherit" component={Link} to="/">
-                  Dashboard
-                </Button>
-                <Button color="inherit" component={Link} to="/players">
-                  Players
-                </Button>
-                <Button color="inherit" component={Link} to="/federations">
-                  Federations
-                </Button>
-                <Button color="inherit" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <Button color="inherit" component={Link} to="/login">
-                Login
-              </Button>
-            )}
-          </Toolbar>
-        </AppBar>
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
 
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/players" element={<PlayerManagement />} />
-          <Route path="/federations" element={<FederationManagement />} />
-          <Route path="/" element={<Dashboard />} />
-        </Routes>
-      </div>
-    </Router>
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  return (
+    <div className="App">
+      {user ? <Dashboard user={user} onLogout={handleLogout} /> : <Login onLogin={handleLogin} />}
+    </div>
   );
 }
 
