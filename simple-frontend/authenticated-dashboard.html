@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PlayConnect Pro - Secure Talent Discovery</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 30px; 
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .auth-section { 
+            background: white; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .filters { 
+            background: white; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .player-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+        }
+        .player-card { 
+            background: white; 
+            border-radius: 10px; 
+            padding: 20px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .player-card:hover { transform: translateY(-5px); }
+        .talent-score { 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24); 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            font-weight: bold;
+            display: inline-block;
+        }
+        .verification-badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .pending-badge {
+            background: #ffc107;
+            color: black;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .skills { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        .skill { background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        input, select, button { 
+            margin: 5px; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+        }
+        button { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #5a6fd8; }
+        .stats { display: flex; gap: 15px; margin: 10px 0; }
+        .stat { background: #f8f9fa; padding: 8px 12px; border-radius: 5px; }
+        .user-info { 
+            background: #e7f3ff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px;
+        }
+        .federation-controls { 
+            background: #fff3cd; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PlayConnect Pro - Secure Talent Discovery</h1>
+            <p>Federation-Controlled Player Management System</p>
+        </div>
+
+        <div class="auth-section" id="authSection">
+            <h3>Authentication Required</h3>
+            <div>
+                <input type="email" id="email" placeholder="Email" value="federation@example.com">
+                <input type="password" id="password" placeholder="Password" value="password">
+                <button onclick="login()">Login</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <strong>Demo Credentials:</strong><br>
+                Federation: federation@example.com / password<br>
+                Scout: scout@example.com / password
+            </div>
+        </div>
+
+        <div class="user-info" id="userInfo" style="display: none;">
+            <h3>Welcome, <span id="userName"></span></h3>
+            <p>Role: <strong id="userRole"></strong> | <span id="userPermissions"></span></p>
+            <button onclick="logout()" style="background: #dc3545;">Logout</button>
+        </div>
+
+        <div class="federation-controls" id="federationControls">
+            <h3>Federation Controls</h3>
+            <button onclick="showAddPlayerForm()">Add New Player</button>
+            <div id="addPlayerForm" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                <input type="text" id="newFirstName" placeholder="First Name">
+                <input type="text" id="newLastName" placeholder="Last Name">
+                <select id="newPosition">
+                    <option value="">Select Position</option>
+                    <option value="Forward">Forward</option>
+                    <option value="Midfielder">Midfielder</option>
+                    <option value="Defender">Defender</option>
+                    <option value="Goalkeeper">Goalkeeper</option>
+                </select>
+                <input type="number" id="newAge" placeholder="Age">
+                <input type="text" id="newTeam" placeholder="Team">
+                <button onclick="addPlayer()">Create Player</button>
+                <button onclick="hideAddPlayerForm()" style="background: #6c757d;">Cancel</button>
+            </div>
+        </div>
+
+        <div class="filters" id="filtersSection">
+            <h3>Advanced Search & Filters</h3>
+            <div>
+                <input type="text" id="search" placeholder="Search players..." onkeyup="searchPlayers()">
+                <select id="position" onchange="filterPlayers()">
+                    <option value="">All Positions</option>
+                    <option value="Forward">Forward</option>
+                    <option value="Midfielder">Midfielder</option>
+                    <option value="Defender">Defender</option>
+                </select>
+                <select id="verificationStatus" onchange="filterPlayers()">
+                    <option value="">All Status</option>
+                    <option value="verified">Verified</option>
+                    <option value="pending">Pending</option>
+                </select>
+                <button onclick="loadPlayers()">Refresh Players</button>
+            </div>
+        </div>
+
+        <div id="players" class="player-grid"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3010';
+        let currentUser = null;
+        let currentToken = null;
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentUser = data.user;
+                    currentToken = data.token;
+                    
+                    // Update UI
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('userInfo').style.display = 'block';
+                    document.getElementById('filtersSection').style.display = 'block';
+                    document.getElementById('userName').textContent = currentUser.name;
+                    document.getElementById('userRole').textContent = currentUser.role;
+                    
+                    // Show federation controls if federation user
+                    if (currentUser.role === 'federation') {
+                        document.getElementById('federationControls').style.display = 'block';
+                        document.getElementById('userPermissions').textContent = 'Permissions: Create Players, Verify Players';
+                    } else {
+                        document.getElementById('userPermissions').textContent = 'Permissions: View Full Data';
+                    }
+                    
+                    // Load players
+                    loadPlayers();
+                    
+                } else {
+                    alert('Login failed: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            currentToken = null;
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('filtersSection').style.display = 'none';
+            document.getElementById('federationControls').style.display = 'none';
+            document.getElementById('players').innerHTML = '';
+        }
+
+        async function loadPlayers() {
+            if (!currentToken) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/players`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayPlayers(data.players);
+                } else {
+                    alert('Failed to load players: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error loading players:', error);
+            }
+        }
+
+        function displayPlayers(players) {
+            const container = document.getElementById('players');
+            container.innerHTML = players.map(player => `
+                <div class="player-card">
+                    <h3>${player.firstName} ${player.lastName} 
+                        ${player.verificationStatus === 'verified' ? 
+                            '<span class="verification-badge">Verified</span>' : 
+                            '<span class="pending-badge">Pending</span>'
+                        }
+                    </h3>
+                    <div class="stats">
+                        <div class="stat">${player.position}</div>
+                        <div class="stat">Age: ${player.age}</div>
+                        <div class="talent-score">${player.talentScore}</div>
+                    </div>
+                    <p><strong>Team:</strong> ${player.team} | <strong>Nationality:</strong> ${player.nationality}</p>
+                    <p><strong>Value:</strong> $${player.value?.toLocaleString() || '0'}</p>
+                    
+                    ${player.skills && Object.keys(player.skills).length > 0 ? `
+                        <div class="skills">
+                            ${Object.entries(player.skills).map(([skill, value]) => 
+                                `<span class="skill">${skill}: ${value}</span>`
+                            ).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${currentUser.role === 'federation' ? `
+                        <div style="margin-top: 15px;">
+                            <button onclick="verifyPlayer(${player.id}, 'verified')" 
+                                    ${player.verificationStatus === 'verified' ? 'disabled' : ''}>
+                                Verify Player
+                            </button>
+                            <button onclick="verifyPlayer(${player.id}, 'pending')" 
+                                    ${player.verificationStatus === 'pending' ? 'disabled' : ''}
+                                    style="background: #ffc107; color: black;">
+                                Mark Pending
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function showAddPlayerForm() {
+            document.getElementById('addPlayerForm').style.display = 'block';
+        }
+
+        function hideAddPlayerForm() {
+            document.getElementById('addPlayerForm').style.display = 'none';
+        }
+
+        async function addPlayer() {
+            const firstName = document.getElementById('newFirstName').value;
+            const lastName = document.getElementById('newLastName').value;
+            const position = document.getElementById('newPosition').value;
+            const age = document.getElementById('newAge').value;
+            const team = document.getElementById('newTeam').value;
+
+            if (!firstName || !lastName || !position || !age || !team) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/players`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        firstName,
+                        lastName,
+                        position,
+                        age: parseInt(age),
+                        height: 180, // Default values
+                        weight: 75,
+                        nationality: 'Unknown',
+                        team,
+                        skills: {}
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Player created successfully!');
+                    hideAddPlayerForm();
+                    loadPlayers(); // Refresh the list
+                } else {
+                    alert('Failed to create player: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error creating player:', error);
+                alert('Failed to create player: ' + error.message);
+            }
+        }
+
+        async function verifyPlayer(playerId, status) {
+            try {
+                const response = await fetch(`${API_BASE}/api/players/${playerId}/verify`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(`Player verification status updated to ${status}`);
+                    loadPlayers(); // Refresh the list
+                } else {
+                    alert('Failed to verify player: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error verifying player:', error);
+                alert('Failed to verify player: ' + error.message);
+            }
+        }
+
+        function searchPlayers() {
+            // Implement search functionality
+            const query = document.getElementById('search').value.toLowerCase();
+            // This would filter the displayed players
+        }
+
+        function filterPlayers() {
+            // Implement filtering functionality
+            // This would filter based on position and verification status
+        }
+    </script>
+</body>
+</html>
