@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PlayConnect - Talent Discovery</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .player-card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; }
+        .skills { display: flex; gap: 10px; flex-wrap: wrap; }
+        .skill { background: #f0f0f0; padding: 5px 10px; border-radius: 4px; }
+        .filters { background: #f9f9f9; padding: 20px; margin-bottom: 20px; }
+        input, select { margin: 5px; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 PlayConnect Talent Discovery</h1>
+    
+    <div class="filters">
+        <h3>Search & Filter Players</h3>
+        <input type="text" id="search" placeholder="Search by name..." onkeyup="searchPlayers()">
+        <select id="position" onchange="filterPlayers()">
+            <option value="">All Positions</option>
+            <option value="Forward">Forward</option>
+            <option value="Midfielder">Midfielder</option>
+            <option value="Defender">Defender</option>
+        </select>
+        <input type="number" id="minAge" placeholder="Min Age" onchange="filterPlayers()">
+        <input type="number" id="maxAge" placeholder="Max Age" onchange="filterPlayers()">
+        <button onclick="loadPlayers()">Load All Players</button>
+    </div>
+
+    <div id="players"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:3007';
+        
+        async function loadPlayers() {
+            try {
+                const response = await fetch(`${API_BASE}/players`);
+                const data = await response.json();
+                displayPlayers(data.players);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function searchPlayers() {
+            const query = document.getElementById('search').value;
+            if (query.length < 2) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                displayPlayers(data.players);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function filterPlayers() {
+            const position = document.getElementById('position').value;
+            const minAge = document.getElementById('minAge').value;
+            const maxAge = document.getElementById('maxAge').value;
+            
+            let url = `${API_BASE}/players?`;
+            const params = [];
+            if (position) params.push(`position=${position}`);
+            if (minAge) params.push(`minAge=${minAge}`);
+            if (maxAge) params.push(`maxAge=${maxAge}`);
+            
+            if (params.length > 0) {
+                url += params.join('&');
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    displayPlayers(data.players);
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        function displayPlayers(players) {
+            const container = document.getElementById('players');
+            container.innerHTML = players.map(player => `
+                <div class="player-card">
+                    <h3>${player.firstName} ${player.lastName}</h3>
+                    <p><strong>Position:</strong> ${player.position} | <strong>Age:</strong> ${player.age} | <strong>Team:</strong> ${player.team}</p>
+                    <p><strong>Height:</strong> ${player.height}cm | <strong>Value:</strong> $${player.value.toLocaleString()}</p>
+                    <div class="skills">
+                        ${Object.entries(player.skills).map(([skill, value]) => 
+                            `<span class="skill">${skill}: ${value}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load players on page load
+        loadPlayers();
+    </script>
+</body>
+</html>

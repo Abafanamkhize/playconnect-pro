@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PlayConnect Pro - Advanced Talent Discovery</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 30px; 
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .filters { 
+            background: white; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .player-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+        }
+        .player-card { 
+            background: white; 
+            border-radius: 10px; 
+            padding: 20px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .player-card:hover { transform: translateY(-5px); }
+        .talent-score { 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24); 
+            color: white; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            font-weight: bold;
+            display: inline-block;
+        }
+        .skills { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        .skill { background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .comparison { background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        input, select, button { 
+            margin: 5px; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+        }
+        button { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #5a6fd8; }
+        .stats { display: flex; gap: 15px; margin: 10px 0; }
+        .stat { background: #f8f9fa; padding: 8px 12px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PlayConnect Pro - Advanced Talent Discovery</h1>
+            <p>AI-Powered Player Scouting & Analysis Platform</p>
+        </div>
+
+        <div class="filters">
+            <h3>Advanced Search & Filters</h3>
+            <div>
+                <input type="text" id="search" placeholder="Search players..." onkeyup="searchPlayers()">
+                <select id="position" onchange="filterPlayers()">
+                    <option value="">All Positions</option>
+                    <option value="Forward">Forward</option>
+                    <option value="Midfielder">Midfielder</option>
+                    <option value="Defender">Defender</option>
+                </select>
+                <input type="number" id="minAge" placeholder="Min Age" onchange="filterPlayers()">
+                <input type="number" id="maxAge" placeholder="Max Age" onchange="filterPlayers()">
+                <input type="number" id="minScore" placeholder="Min Talent Score" onchange="filterPlayers()">
+                <button onclick="loadTopTalents()">Top Talents</button>
+                <button onclick="loadHighPotential()">High Potential</button>
+                <button onclick="loadAllPlayers()">All Players</button>
+            </div>
+        </div>
+
+        <div id="comparison" class="comparison" style="display: none;">
+            <h3>Player Comparison</h3>
+            <div id="comparison-content"></div>
+        </div>
+
+        <div id="players" class="player-grid"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3008';
+        
+        async function loadAllPlayers() {
+            try {
+                const response = await fetch(`${API_BASE}/players`);
+                const data = await response.json();
+                displayPlayers(data.players);
+                hideComparison();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadTopTalents() {
+            try {
+                const response = await fetch(`${API_BASE}/top-talents`);
+                const data = await response.json();
+                displayPlayers(data.topTalents);
+                hideComparison();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadHighPotential() {
+            try {
+                const response = await fetch(`${API_BASE}/high-potential`);
+                const data = await response.json();
+                displayPlayers(data.highPotentialPlayers);
+                hideComparison();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function searchPlayers() {
+            const query = document.getElementById('search').value;
+            if (query.length < 2) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                displayPlayers(data.players);
+                hideComparison();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function filterPlayers() {
+            const position = document.getElementById('position').value;
+            const minAge = document.getElementById('minAge').value;
+            const maxAge = document.getElementById('maxAge').value;
+            const minScore = document.getElementById('minScore').value;
+            
+            let url = `${API_BASE}/players?`;
+            const params = [];
+            if (position) params.push(`position=${position}`);
+            if (minAge) params.push(`minAge=${minAge}`);
+            if (maxAge) params.push(`maxAge=${maxAge}`);
+            if (minScore) params.push(`minScore=${minScore}`);
+            
+            if (params.length > 0) {
+                url += params.join('&');
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    displayPlayers(data.players);
+                    hideComparison();
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        async function comparePlayers(player1Id, player2Id) {
+            try {
+                const response = await fetch(`${API_BASE}/compare/${player1Id}/${player2Id}`);
+                const data = await response.json();
+                displayComparison(data);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function displayComparison(comparisonData) {
+            const comparison = comparisonData.comparison;
+            const container = document.getElementById('comparison-content');
+            
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>${comparisonData.player1.firstName} ${comparisonData.player1.lastName}</h4>
+                        <div class="talent-score">Talent: ${comparisonData.player1.talentScore}</div>
+                    </div>
+                    <div>
+                        <h4>${comparisonData.player2.firstName} ${comparisonData.player2.lastName}</h4>
+                        <div class="talent-score">Talent: ${comparisonData.player2.talentScore}</div>
+                    </div>
+                </div>
+                <h4>Skills Comparison:</h4>
+                ${Object.entries(comparison.skills).map(([skill, data]) => `
+                    <div style="margin: 10px 0;">
+                        <strong>${skill}:</strong> 
+                        ${data.player1} vs ${data.player2} 
+                        <span style="color: ${data.difference > 0 ? 'green' : data.difference < 0 ? 'red' : 'gray'}">
+                            (${data.difference > 0 ? '+' : ''}${data.difference})
+                        </span>
+                    </div>
+                `).join('')}
+            `;
+            
+            document.getElementById('comparison').style.display = 'block';
+        }
+
+        function hideComparison() {
+            document.getElementById('comparison').style.display = 'none';
+        }
+
+        function displayPlayers(players) {
+            const container = document.getElementById('players');
+            container.innerHTML = players.map(player => `
+                <div class="player-card">
+                    <h3>${player.firstName} ${player.lastName}</h3>
+                    <div class="stats">
+                        <div class="stat">${player.position}</div>
+                        <div class="stat">Age: ${player.age}</div>
+                        <div class="talent-score">${player.talentScore}</div>
+                    </div>
+                    <p><strong>Team:</strong> ${player.team} | <strong>Nationality:</strong> ${player.nationality}</p>
+                    <p><strong>Value:</strong> $${player.value.toLocaleString()}</p>
+                    
+                    <div class="skills">
+                        ${Object.entries(player.skills).map(([skill, value]) => 
+                            `<span class="skill">${skill}: ${value}</span>`
+                        ).join('')}
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <strong>Highlights:</strong> ${player.highlights.join(', ')}
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <button onclick="comparePlayers(1, ${player.id})">Compare with Messi</button>
+                        <button onclick="comparePlayers(4, ${player.id})">Compare with Mbappé</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load top talents on page load
+        loadTopTalents();
+    </script>
+</body>
+</html>

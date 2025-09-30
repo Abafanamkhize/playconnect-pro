@@ -1,0 +1,12 @@
+nohup: ignoring input
+
+> player-service@1.0.0 start
+> node server.js
+
+👤 Player Service running on port 3002
+📍 Health check: http://localhost:3002/health
+📊 Sample players loaded: 2
+✅ Player endpoints ready:
+   POST /players - Create player (federation only)
+   GET  /players - Get all players with filtering
+   GET  /players/:id - Get player by ID
