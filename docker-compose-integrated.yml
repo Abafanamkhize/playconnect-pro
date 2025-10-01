@@ -90,3 +90,13 @@ volumes:
       - ./backend/video-service/uploads:/app/uploads
     depends_on:
       - postgres
+
+  ai-service:
+    build: ./backend/ai-service
+    ports:
+      - "3009:3009"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
+      - JWT_SECRET=your-super-secret-jwt-key-here
+    depends_on:
+      - postgres
