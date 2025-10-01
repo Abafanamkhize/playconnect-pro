@@ -8,5 +8,8 @@
     "multer": "^2.0.2",
     "pg": "^8.16.3",
     "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "axios": "^1.12.2"
   }
 }

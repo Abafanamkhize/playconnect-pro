@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const User = sequelize.define('User', {
   id: {
@@ -24,8 +24,9 @@ const User = sequelize.define('User', {
     }
   },
   role: {
-    type: DataTypes.ENUM('player', 'scout', 'federation_admin', 'super_admin'),
-    allowNull: false
+    type: DataTypes.ENUM('player', 'scout', 'federation_admin', 'super_admin', 'coach'),
+    allowNull: false,
+    defaultValue: 'player'
   },
   firstName: {
     type: DataTypes.STRING,
@@ -39,8 +40,25 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  verificationToken: {
+    type: DataTypes.STRING
+  },
+  resetPasswordToken: {
+    type: DataTypes.STRING
+  },
+  resetPasswordExpires: {
+    type: DataTypes.DATE
+  },
   lastLogin: {
     type: DataTypes.DATE
+  },
+  federationId: {
+    type: DataTypes.UUID,
+    allowNull: true
   }
 }, {
   timestamps: true,

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayConnect - Web Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .service-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .service-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.checking { background: #fff3cd; color: #856404; }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn:hover { opacity: 0.9; }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .url-info {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .url-info h4 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .url-list {
+            list-style: none;
+        }
+        .url-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .url-list li:last-child {
+            border-bottom: none;
+        }
+        .url-list a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .url-list a:hover {
+            text-decoration: underline;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        .login-demo {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 PlayConnect</h1>
+            <p>Global Sports Scouting Platform - Live Web Demo</p>
+        </div>
+        
+        <div class="content">
+            <h2>🚀 Live Service Status</h2>
+            <div class="services-grid" id="services-grid">
+                <!-- Services will be populated by JavaScript -->
+            </div>
+
+            <div class="login-demo">
+                <h4>🧪 Test Credentials:</h4>
+                <p><strong>Email:</strong> player@test.com | scout@test.com | admin@test.com</p>
+                <p><strong>Password:</strong> password</p>
+                <p><strong>Role:</strong> player | scout | super_admin</p>
+            </div>
+
+            <div class="url-info">
+                <h4>🌐 Access URLs:</h4>
+                <ul class="url-list" id="url-list">
+                    <!-- URLs will be populated by JavaScript -->
+                </ul>
+            </div>
+
+            <div id="global-results"></div>
+        </div>
+    </div>
+
+    <script>
+        const services = [
+            {
+                name: '🔐 Authentication Service',
+                url: '/health',
+                port: 3003,
+                endpoints: [
+                    { name: 'Health Check', path: '/health', method: 'GET' },
+                    { name: 'Connectivity', path: '/api/connectivity', method: 'GET' },
+                    { name: 'Test Endpoint', path: '/api/test', method: 'GET' },
+                    { name: 'User Login', path: '/api/v2/auth/login-enhanced', method: 'POST' }
+                ]
+            },
+            {
+                name: '👥 User Management',
+                url: '/health',
+                port: 3010,
+                endpoints: [
+                    { name: 'Health Check', path: '/health', method: 'GET' },
+                    { name: 'Users List', path: '/api/users', method: 'GET' },
+                    { name: 'User Stats', path: '/api/users/stats', method: 'GET' },
+                    { name: 'My Profile', path: '/api/users/profile/me', method: 'GET' }
+                ]
+            }
+        ];
+
+        // Get current host information
+        const currentHost = window.location.hostname;
+        
+        // Generate access URLs
+        function generateURLs() {
+            const urlList = document.getElementById('url-list');
+            const baseURL = window.location.origin;
+            
+            // Try to get local IP (this is a best-effort approach)
+            const localIP = '172.22.11.51'; // You can replace this with your actual IP
+            
+            const urls = [
+                { name: '📄 This Demo Page', url: baseURL },
+                { name: '🔐 Authentication API', url: `http://${currentHost}:3003` },
+                { name: '👥 User Management API', url: `http://${currentHost}:3010` },
+                { name: '📱 Mobile Access', url: `http://${localIP}:8080`, note: 'Use this URL on your phone (same WiFi)' }
+            ];
+
+            urlList.innerHTML = urls.map(item => `
+                <li>
+                    <strong>${item.name}:</strong> 
+                    <a href="${item.url}" target="_blank">${item.url}</a>
+                    ${item.note ? `<br><small>${item.note}</small>` : ''}
+                </li>
+            `).join('');
+        }
+
+        // Test service connectivity
+        async function testService(service) {
+            const testURL = `http://${currentHost}:${service.port}${service.url}`;
+            
+            try {
+                const response = await fetch(testURL);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                return {
+                    status: 'connected',
+                    message: data.status || 'Service is running',
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    status: 'error',
+                    message: `Connection failed: ${error.message}`
+                };
+            }
+        }
+
+        // Create service cards
+        function createServiceCards() {
+            const grid = document.getElementById('services-grid');
+            
+            grid.innerHTML = services.map(service => `
+                <div class="service-card" id="card-${services.indexOf(service)}">
+                    <h3>${service.name}</h3>
+                    <div class="service-status" id="status-${services.indexOf(service)}">
+                        <span class="status checking">Checking...</span>
+                    </div>
+                    <div class="test-buttons">
+                        <button class="btn btn-primary" onclick="testSingleService(${services.indexOf(service)})">
+                            Test Connection
+                        </button>
+                        ${service.endpoints.map(endpoint => `
+                            <button class="btn btn-info" onclick="testEndpoint(${services.indexOf(service)}, ${service.endpoints.indexOf(endpoint)})">
+                                ${endpoint.name}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="results" id="results-${services.indexOf(service)}"></div>
+                </div>
+            `).join('');
+
+            // Test all services on load
+            services.forEach((service, index) => {
+                testSingleService(index);
+            });
+        }
+
+        // Test a single service
+        async function testSingleService(serviceIndex) {
+            const service = services[serviceIndex];
+            const statusElement = document.getElementById(`status-${serviceIndex}`);
+            const resultsElement = document.getElementById(`results-${serviceIndex}`);
+            
+            statusElement.innerHTML = '<span class="status checking">Testing...</span>';
+            
+            const result = await testService(service);
+            
+            statusElement.innerHTML = `
+                <span class="status ${result.status}">
+                    ${result.status === 'connected' ? '✅ Connected' : '❌ Error'}
+                </span>
+            `;
+            
+            resultsElement.innerHTML = `
+                <strong>Result:</strong> ${result.message}
+                ${result.data ? `<pre>${JSON.stringify(result.data, null, 2)}</pre>` : ''}
+            `;
+            resultsElement.style.display = 'block';
+        }
+
+        // Test a specific endpoint
+        async function testEndpoint(serviceIndex, endpointIndex) {
+            const service = services[serviceIndex];
+            const endpoint = service.endpoints[endpointIndex];
+            const resultsElement = document.getElementById(`results-${serviceIndex}`);
+            
+            const testURL = `http://${currentHost}:${service.port}${endpoint.path}`;
+            
+            try {
+                const options = {
+                    method: endpoint.method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                };
+                
+                // Add body for login endpoint
+                if (endpoint.path.includes('login')) {
+                    options.body = JSON.stringify({
+                        email: 'player@test.com',
+                        password: 'password',
+                        role: 'player'
+                    });
+                }
+                
+                const response = await fetch(testURL, options);
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                
+                const data = await response.json();
+                
+                resultsElement.innerHTML = `
+                    <strong>${endpoint.name} (${endpoint.method} ${endpoint.path}):</strong>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                resultsElement.style.display = 'block';
+            } catch (error) {
+                resultsElement.innerHTML = `
+                    <strong>Error testing ${endpoint.name}:</strong> ${error.message}
+                    <br><small>Check browser console for CORS details</small>
+                `;
+                resultsElement.style.display = 'block';
+                console.error('Endpoint test error:', error);
+            }
+        }
+
+        // Initialize the page
+        function init() {
+            createServiceCards();
+            generateURLs();
+            
+            // Auto-refresh status every 30 seconds
+            setInterval(() => {
+                services.forEach((service, index) => {
+                    testSingleService(index);
+                });
+            }, 30000);
+        }
+
+        // Start when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
