@@ -1,144 +1,296 @@
-const express = require('express');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
+const { Sequelize } = require("sequelize");
+require('dotenv').config();
+
 const app = express();
+const PORT = process.env.PORT || 3007;
+
+// Database connection
+const sequelize = new Sequelize(
+  process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/playconnect',
+  {
+    dialect: 'postgres',
+    logging: false
+  }
+);
+
+// Import models from existing structure
+const Player = require('../models/Player');
+const User = require('../models/User');
+const Federation = require('../player-service/src/models/Federation');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Service status endpoint
-app.get('/api/status', (req, res) => {
+// JWT verification middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Access token required" });
+  }
+
+  const jwt = require('jsonwebtoken');
+  const JWT_SECRET = process.env.JWT_SECRET || "playconnect-super-secret-key-2024";
+  
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid or expired token" });
+    }
+    req.user = user;
+    next();
+  });
+};
+
+// Health check endpoint
+app.get("/health", (req, res) => {
   res.json({
-    status: '🎯 PlayConnect - Phase 2 Integration Running',
-    version: '2.0.0',
-    phase: 'Database & Service Integration',
+    status: "Integration Service Running",
+    port: PORT,
     timestamp: new Date().toISOString(),
     services: {
-      integration: '✅ Running on port 3006',
-      player: '🟡 Ready to start on port 3003',
-      auth: '🟡 Ready to start on port 3002',
-      frontend: '✅ Ready on port 3000',
-      database: '✅ Models & Migrations Ready'
-    },
-    features: [
-      '3-role authentication system',
-      'Player management with video upload',
-      'Federation-controlled verification',
-      'Advanced search and filtering',
-      'Complete microservices architecture'
-    ]
+      auth: "http://localhost:3002",
+      player: "http://localhost:3003",
+      file: "http://localhost:3006"
+    }
   });
 });
 
-// Test players endpoint (will connect to real player service)
-app.get('/api/players', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Connected to PlayConnect integration service',
-    data: [
-      {
-        id: 101,
-        name: 'Lionel Messi',
-        position: 'Forward',
-        age: 36,
-        rating: 95,
-        team: 'Inter Miami',
-        nationality: 'Argentina',
-        status: 'Verified',
-        aiScore: 98,
-        stats: { speed: 90, dribbling: 95, shooting: 92, passing: 91, vision: 94 }
-      },
-      {
-        id: 102,
-        name: 'Cristiano Ronaldo',
-        position: 'Forward',
-        age: 39,
-        rating: 88,
-        team: 'Al Nassr',
-        nationality: 'Portugal',
-        status: 'Verified',
-        aiScore: 92,
-        stats: { speed: 84, dribbling: 85, shooting: 90, passing: 82, vision: 83 }
-      },
-      {
-        id: 103,
-        name: 'Kevin De Bruyne',
-        position: 'Midfielder',
-        age: 32,
-        rating: 91,
-        team: 'Manchester City',
-        nationality: 'Belgium',
-        status: 'Verified',
-        aiScore: 94,
-        stats: { speed: 76, dribbling: 86, shooting: 86, passing: 94, vision: 95 }
-      }
-    ]
-  });
-});
+// Unified player search with advanced filtering
+app.get("/api/search/players", authenticateToken, async (req, res) => {
+  try {
+    const { query, position, ageMin, ageMax, skills, federationId, page = 1, limit = 10 } = req.query;
+    
+    const whereClause = {};
+    
+    // Text search
+    if (query) {
+      whereClause.name = { [Sequelize.Op.iLike]: `%${query}%` };
+    }
+    
+    // Filter by position
+    if (position) {
+      whereClause.position = position;
+    }
+    
+    // Filter by age range
+    if (ageMin || ageMax) {
+      whereClause.age = {};
+      if (ageMin) whereClause.age[Sequelize.Op.gte] = parseInt(ageMin);
+      if (ageMax) whereClause.age[Sequelize.Op.lte] = parseInt(ageMax);
+    }
+    
+    // Filter by federation
+    if (federationId) {
+      whereClause.federationId = federationId;
+    }
 
-// Authentication test endpoint
-app.post('/api/auth/login', (req, res) => {
-  const { email, password, role } = req.body;
-  
-  // Mock authentication - will connect to real auth service
-  const users = {
-    'player@test.com': { id: 1, name: 'John Player', role: 'player', playerId: 101 },
-    'scout@test.com': { id: 2, name: 'David Scout', role: 'scout' },
-    'federation@test.com': { id: 3, name: 'Sarah Federation', role: 'federation_admin', federationId: 1 }
-  };
+    const offset = (page - 1) * limit;
 
-  const user = users[email];
-  
-  if (user && password === 'password' && user.role === role) {
+    const players = await Player.findAndCountAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: offset,
+      order: [['createdAt', 'DESC']],
+      include: [{
+        model: Federation,
+        as: 'federation',
+        attributes: ['id', 'name']
+      }]
+    });
+
     res.json({
       success: true,
-      message: 'Login successful via integration service',
       data: {
-        token: 'integration-jwt-token',
-        user: user
+        players: players.rows,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: players.count,
+          pages: Math.ceil(players.count / limit)
+        }
       }
     });
-  } else {
-    res.status(401).json({
+
+  } catch (error) {
+    console.error("Search players error:", error);
+    res.status(500).json({ 
       success: false,
-      message: 'Invalid credentials'
+      error: "Search failed" 
     });
   }
 });
 
-// Health check for all services
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    service: 'playconnect-integration',
-    phase: '2',
-    database: {
-      models: '✅ Ready',
-      migrations: '✅ 15+ migrations available',
-      relationships: '✅ Player-Federation-User associations'
-    },
-    ready_for: [
-      'Database connection with PostgreSQL',
-      'Real player service integration',
-      'Authentication service connection',
-      'Frontend API integration'
-    ]
-  });
+// Get player analytics
+app.get("/api/analytics/players/:playerId", authenticateToken, async (req, res) => {
+  try {
+    const player = await Player.findByPk(req.params.playerId, {
+      include: [{
+        model: Federation,
+        as: 'federation'
+      }]
+    });
+
+    if (!player) {
+      return res.status(404).json({ 
+        success: false,
+        error: "Player not found" 
+      });
+    }
+
+    // Mock analytics data - would be calculated from real data
+    const analytics = {
+      playerId: player.id,
+      performanceTrend: [
+        { date: '2024-01-01', rating: 85 },
+        { date: '2024-02-01', rating: 87 },
+        { date: '2024-03-01', rating: 90 }
+      ],
+      skillBreakdown: {
+        speed: player.stats?.speed || 0,
+        dribbling: player.stats?.dribbling || 0,
+        shooting: player.stats?.shooting || 0,
+        passing: player.stats?.passing || 0,
+        vision: player.stats?.vision || 0
+      },
+      comparison: {
+        positionAverage: 82,
+        topPercentile: 95
+      },
+      recommendations: [
+        "Focus on speed training",
+        "Improve defensive positioning",
+        "Enhance passing accuracy under pressure"
+      ]
+    };
+
+    res.json({
+      success: true,
+      data: analytics
+    });
+
+  } catch (error) {
+    console.error("Player analytics error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Analytics failed" 
+    });
+  }
 });
 
-const PORT = 3006;
-app.listen(PORT, () => {
-  console.log('🚀 ==========================================');
-  console.log('🎯 PLAYCONNECT PHASE 2 - INTEGRATION SERVICE');
-  console.log('🚀 ==========================================');
-  console.log(`📍 Integration API: http://localhost:${PORT}`);
-  console.log(`📊 Status: http://localhost:${PORT}/api/status`);
-  console.log(`👥 Players: http://localhost:${PORT}/api/players`);
-  console.log(`❤️  Health: http://localhost:${PORT}/api/health`);
-  console.log('');
-  console.log('🔧 NEXT STEPS:');
-  console.log('   1. Start frontend: cd frontend/federation-dashboard && npm start');
-  console.log('   2. Connect to database: npm run db:setup');
-  console.log('   3. Start player service: cd backend/player-service && npm start');
-  console.log('');
+// Get federation analytics
+app.get("/api/analytics/federations/:federationId", authenticateToken, async (req, res) => {
+  try {
+    const federation = await Federation.findByPk(req.params.federationId, {
+      include: [{
+        model: Player,
+        as: 'players'
+      }]
+    });
+
+    if (!federation) {
+      return res.status(404).json({ 
+        success: false,
+        error: "Federation not found" 
+      });
+    }
+
+    const analytics = {
+      federationId: federation.id,
+      totalPlayers: federation.players?.length || 0,
+      playerDistribution: {
+        forward: federation.players?.filter(p => p.position === 'Forward').length || 0,
+        midfielder: federation.players?.filter(p => p.position === 'Midfielder').length || 0,
+        defender: federation.players?.filter(p => p.position === 'Defender').length || 0,
+        goalkeeper: federation.players?.filter(p => p.position === 'Goalkeeper').length || 0
+      },
+      averageRatings: {
+        overall: 84,
+        forward: 86,
+        midfielder: 83,
+        defender: 82,
+        goalkeeper: 85
+      },
+      talentPipeline: {
+        emerging: 12,
+        developing: 8,
+        established: 15,
+        elite: 5
+      }
+    };
+
+    res.json({
+      success: true,
+      data: analytics
+    });
+
+  } catch (error) {
+    console.error("Federation analytics error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Analytics failed" 
+    });
+  }
+});
+
+// Unified data sync endpoint
+app.get("/api/sync/data", authenticateToken, async (req, res) => {
+  try {
+    const [players, federations, users] = await Promise.all([
+      Player.findAll({
+        limit: 50,
+        order: [['updatedAt', 'DESC']],
+        include: [{
+          model: Federation,
+          as: 'federation',
+          attributes: ['id', 'name']
+        }]
+      }),
+      Federation.findAll({
+        limit: 10,
+        order: [['name', 'ASC']]
+      }),
+      User.findAll({
+        where: { isActive: true },
+        attributes: ['id', 'email', 'firstName', 'lastName', 'role'],
+        limit: 20
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        players,
+        federations,
+        users,
+        lastSync: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error("Data sync error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Data sync failed" 
+    });
+  }
+});
+
+// Start server
+app.listen(PORT, async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("🔄 Integration Service running on port " + PORT);
+    console.log("📍 Health check: http://localhost:" + PORT + "/health");
+    console.log("✅ Integration endpoints ready:");
+    console.log("   GET  /api/search/players - Advanced player search");
+    console.log("   GET  /api/analytics/players/:id - Player analytics");
+    console.log("   GET  /api/analytics/federations/:id - Federation analytics");
+    console.log("   GET  /api/sync/data - Unified data sync");
+  } catch (error) {
+    console.error("Database connection failed:", error);
+  }
 });
