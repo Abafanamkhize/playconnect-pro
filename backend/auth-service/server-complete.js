@@ -19,7 +19,7 @@ const sequelize = new Sequelize(
 );
 
 // Import User model
-const User = require('../../models/User');
+const User = require('../models/User');
 
 // Middleware
 app.use(cors());
