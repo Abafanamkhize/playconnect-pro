@@ -78,3 +78,15 @@ services:
 
 volumes:
   postgres_data:
+
+  video-service:
+    build: ./backend/video-service
+    ports:
+      - "3008:3008"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
+      - JWT_SECRET=your-super-secret-jwt-key-here
+    volumes:
+      - ./backend/video-service/uploads:/app/uploads
+    depends_on:
+      - postgres
