@@ -11,29 +11,22 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - playconnect-network
 
   auth-service:
-    build:
-      context: ./backend/auth-service
-      dockerfile: Dockerfile
+    image: node:18-alpine
     container_name: playconnect_auth
+    working_dir: /app
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production-2024
-      - FRONTEND_URL=http://localhost:3000
     depends_on:
       - postgres
-    networks:
-      - playconnect-network
+    volumes:
+      - ./backend/auth-service:/app
+    command: sh -c "npm install && npm start"
 
 volumes:
   postgres_data:
-
-networks:
-  playconnect-network:
-    driver: bridge

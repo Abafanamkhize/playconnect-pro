@@ -242,7 +242,7 @@ const Dashboard = ({ user, onLogout }) => {
                 <Button 
                   variant="text" 
                   size="small" 
-                  onClick={() => window.open('http://localhost:3006/api/status', '_blank')}
+                  onClick={() => window.open('http://localhost:3001/api/status', '_blank')}
                   sx={{ mt: 1 }}
                 >
                   View Detailed Status

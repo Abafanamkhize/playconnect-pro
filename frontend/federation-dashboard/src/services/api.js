@@ -1,55 +1,71 @@
-import axios from 'axios';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Your API Gateway
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+class ApiService {
+  constructor() {
+    this.baseURL = API_BASE_URL;
   }
-  return config;
-});
 
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userRole');
-      window.location.href = '/login';
+  async request(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    if (config.body && typeof config.body === 'object') {
+      config.body = JSON.stringify(config.body);
     }
-    return Promise.reject(error);
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'API request failed');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
   }
-);
 
-export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  logout: () => api.post('/auth/logout'),
-};
+  // Auth methods
+  async register(userData) {
+    return this.request('/register', {
+      method: 'POST',
+      body: userData,
+    });
+  }
 
-export const playerAPI = {
-  getAll: () => api.get('/players'),
-  getById: (id) => api.get(`/players/${id}`),
-  create: (playerData) => api.post('/players', playerData),
-  update: (id, playerData) => api.put(`/players/${id}`, playerData),
-  delete: (id) => api.delete(`/players/${id}`),
-  search: (filters) => api.get('/players/search', { params: filters }),
-};
+  async login(credentials) {
+    return this.request('/login', {
+      method: 'POST',
+      body: credentials,
+    });
+  }
 
-export const federationAPI = {
-  getFederations: () => api.get('/federations'),
-  getFederation: (id) => api.get(`/federations/${id}`),
-  createFederation: (data) => api.post('/federations', data),
-  updateFederation: (id, data) => api.put(`/federations/${id}`, data),
-};
+  async getProfile(token) {
+    return this.request('/profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
 
-export default api;
+  async getUsers(token) {
+    return this.request('/users', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
+}
+
+export default new ApiService();

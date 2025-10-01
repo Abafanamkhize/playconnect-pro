@@ -1,9 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import authRoutes from './routes/authRoutes.js';
-import { testConnection } from './config/database.js';
-import User from './models/User.js';
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const authRoutes = require('./routes/authRoutes');
+const { testConnection } = require('./config/database');
+const User = require('./models/User');
 
 dotenv.config();
 
@@ -38,7 +38,7 @@ testConnection().then(async (connected) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api', authRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -50,7 +50,7 @@ app.get('/health', (req, res) => {
 });
 
 // Test endpoint to check if users table is accessible
-app.get('/api/auth/test-db', async (req, res) => {
+app.get('/api/test-db', async (req, res) => {
   try {
     const userCount = await User.count();
     res.json({
@@ -90,7 +90,7 @@ app.listen(PORT, () => {
   console.log(`🔐 Authentication Service running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 API Base: http://localhost:${PORT}/api/auth`);
+  console.log(`🔗 API Base: http://localhost:${PORT}/api`);
 });
 
-export default app;
+module.exports = app;

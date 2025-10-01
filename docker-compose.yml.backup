@@ -15,7 +15,7 @@ services:
       - playconnect-network
 
   auth-service:
-    build:
+    build: 
       context: ./backend/auth-service
       dockerfile: Dockerfile
     container_name: playconnect_auth

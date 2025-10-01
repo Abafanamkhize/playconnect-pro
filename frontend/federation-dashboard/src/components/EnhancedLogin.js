@@ -1,334 +1,198 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
-  Typography,
   TextField,
   Button,
+  Typography,
   Box,
   Alert,
   CircularProgress,
-  Card,
-  CardContent,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  FormLabel,
-  Grid,
-  Divider
+  Grid
 } from '@mui/material';
-import {
-  SportsSoccer,
-  Search,
-  AdminPanelSettings,
-  Security,
-  TrendingUp,
-  Group
-} from '@mui/icons-material';
+import { SportsSoccer } from '@mui/icons-material';
+import ApiService from '../services/api';
 
-const EnhancedLogin = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('scout');
+const EnhancedLogin = ({ onLoginSuccess }) => {
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [systemStatus, setSystemStatus] = useState('checking');
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  // Check system status on component mount
+  useEffect(() => {
+    checkSystemStatus();
+  }, []);
+
+  const checkSystemStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/health');
+      if (response.ok) {
+        setSystemStatus('online');
+      } else {
+        setSystemStatus('offline');
+      }
+    } catch (err) {
+      setSystemStatus('offline');
+    }
+  };
+
+  const handleInputChange = (field) => (event) => {
+    setCredentials(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+    setError('');
+  };
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Connect to integration service
-      const response = await fetch('http://localhost:3006/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: email || getDemoEmail(role), 
-          password: password || 'password',
-          role 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Store authentication data
-        localStorage.setItem('authToken', data.data.token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        onLogin(data.data.user);
+      const response = await ApiService.login(credentials);
+      
+      if (response.token && response.user) {
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        if (onLoginSuccess) {
+          onLoginSuccess(response.user, response.token);
+        }
+        
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
       } else {
-        setError(data.message || 'Login failed. Please check your credentials.');
+        setError('Login failed: Invalid response from server');
       }
     } catch (err) {
-      setError('Network error. Please ensure the backend service is running on port 3006.');
-      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getDemoEmail = (selectedRole) => {
-    switch (selectedRole) {
-      case 'player': return 'player@test.com';
-      case 'scout': return 'scout@test.com';
-      case 'federation_admin': return 'federation@test.com';
-      default: return 'scout@test.com';
-    }
+  const handleDemoLogin = (role) => {
+    const demoCredentials = {
+      player: { email: 'test@example.com', password: 'testpassword123' },
+      admin: { email: 'admin@playconnect.com', password: 'admin123456' }
+    };
+    
+    setCredentials(demoCredentials[role]);
   };
-
-  const fillDemoCredentials = (selectedRole) => {
-    setRole(selectedRole);
-    setEmail(getDemoEmail(selectedRole));
-    setPassword('password');
-  };
-
-  const roleOptions = [
-    {
-      value: 'player',
-      label: 'Athlete/Player',
-      icon: <SportsSoccer sx={{ fontSize: 40, color: 'primary.main' }} />,
-      description: 'Showcase your talent and connect with opportunities worldwide',
-      features: ['Profile Management', 'Performance Analytics', 'Opportunity Tracking', 'Video Highlights']
-    },
-    {
-      value: 'scout',
-      label: 'Scout/Club',
-      icon: <Search sx={{ fontSize: 40, color: 'secondary.main' }} />,
-      description: 'Discover and recruit exceptional talent with AI-powered insights',
-      features: ['Advanced Search', 'Player Shortlisting', 'Talent Analytics', 'Direct Communication']
-    },
-    {
-      value: 'federation_admin',
-      label: 'Federation Admin',
-      icon: <AdminPanelSettings sx={{ fontSize: 40, color: 'success.main' }} />,
-      description: 'Manage talent verification and platform operations',
-      features: ['Player Verification', 'System Analytics', 'Revenue Management', 'User Administration']
-    }
-  ];
 
   return (
-    <Container component="main" maxWidth="lg">
+    <Container component="main" maxWidth="sm">
       <Box
         sx={{
-          minHeight: '100vh',
+          marginTop: 8,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
           alignItems: 'center',
-          py: 4,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         }}
       >
-        {/* Header Section */}
-        <Box sx={{ textAlign: 'center', mb: 6, color: 'white' }}>
-          <Typography variant="h1" component="h1" gutterBottom sx={{ fontWeight: 'bold', fontSize: { xs: '2.5rem', md: '3.5rem' } }}>
-            🎯 PlayConnect
+        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+            <SportsSoccer sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+            <Typography component="h1" variant="h4">
+              PlayConnect
+            </Typography>
+          </Box>
+          
+          <Typography component="h2" variant="h5" align="center" gutterBottom>
+            Federation Dashboard
           </Typography>
-          <Typography variant="h4" component="h2" gutterBottom sx={{ opacity: 0.9, fontSize: { xs: '1.25rem', md: '1.75rem' } }}>
-            Where Talent Meets Opportunity
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.8, mt: 2 }}>
-            Revolutionizing Sports Talent Discovery Worldwide
-          </Typography>
-        </Box>
 
-        <Paper elevation={24} sx={{ p: { xs: 3, md: 4 }, width: '100%', maxWidth: 1200, borderRadius: 4 }}>
-          <Grid container spacing={4}>
-            {/* Left Side - Role Selection */}
-            <Grid item xs={12} md={6}>
-              <Box>
-                <FormLabel component="legend" sx={{ mb: 3, fontWeight: 'bold', fontSize: '1.25rem' }}>
-                  Select Your Role to Begin
-                </FormLabel>
-                <RadioGroup
-                  value={role}
-                  onChange={(e) => {
-                    setRole(e.target.value);
-                    fillDemoCredentials(e.target.value);
-                  }}
-                >
-                  {roleOptions.map((option) => (
-                    <Card 
-                      key={option.value}
-                      variant="outlined"
-                      sx={{ 
-                        mb: 3,
-                        border: role === option.value ? 3 : 1,
-                        borderColor: role === option.value ? 'primary.main' : 'grey.300',
-                        borderRadius: 3,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          borderColor: 'primary.light',
-                          boxShadow: 4
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ p: 3 }}>
-                        <FormControlLabel
-                          value={option.value}
-                          control={<Radio />}
-                          label={
-                            <Box sx={{ ml: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                {option.icon}
-                                <Typography variant="h6" fontWeight="bold" sx={{ ml: 2 }}>
-                                  {option.label}
-                                </Typography>
-                              </Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                {option.description}
-                              </Typography>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                {option.features.map((feature, index) => (
-                                  <Box
-                                    key={index}
-                                    sx={{
-                                      px: 1,
-                                      py: 0.5,
-                                      bgcolor: 'primary.50',
-                                      borderRadius: 1,
-                                      fontSize: '0.75rem',
-                                      color: 'primary.main'
-                                    }}
-                                  >
-                                    {feature}
-                                  </Box>
-                                ))}
-                              </Box>
-                            </Box>
-                          }
-                          sx={{ width: '100%', m: 0 }}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </RadioGroup>
-              </Box>
+          {/* System Status */}
+          <Alert 
+            severity={systemStatus === 'online' ? 'success' : 'error'}
+            sx={{ mb: 2 }}
+            action={
+              <Button 
+                color="inherit" 
+                size="small"
+                onClick={() => window.open('http://localhost:3001/health', '_blank')}
+              >
+                Check
+              </Button>
+            }
+          >
+            System Status: {systemStatus === 'online' ? 'Backend Service Running on Port 3001' : 'Backend Service Offline'}
+          </Alert>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleLogin} sx={{ mt: 1 }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Address"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={credentials.email}
+              onChange={handleInputChange('email')}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={credentials.password}
+              onChange={handleInputChange('password')}
+            />
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Sign In'}
+            </Button>
+          </Box>
+
+          {/* Demo Login Buttons */}
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 2 }}>
+            Demo Accounts:
+          </Typography>
+          <Grid container spacing={1} sx={{ mt: 1 }}>
+            <Grid item xs={6}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="small"
+                onClick={() => handleDemoLogin('player')}
+              >
+                Player Demo
+              </Button>
             </Grid>
-
-            {/* Right Side - Login Form */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Typography variant="h5" gutterBottom fontWeight="bold">
-                  Secure Sign In
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                  Access your {roleOptions.find(r => r.value === role)?.label} dashboard
-                </Typography>
-
-                <form onSubmit={handleLogin}>
-                  <TextField
-                    fullWidth
-                    label="Email Address"
-                    variant="outlined"
-                    margin="normal"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={getDemoEmail(role)}
-                    required
-                    sx={{ mb: 2 }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Password"
-                    type="password"
-                    variant="outlined"
-                    margin="normal"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    sx={{ mb: 3 }}
-                  />
-
-                  {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      {error}
-                    </Alert>
-                  )}
-
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    disabled={loading}
-                    sx={{ 
-                      mt: 2, 
-                      mb: 2, 
-                      py: 1.5,
-                      fontSize: '1.1rem',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {loading ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      `Sign In as ${roleOptions.find(r => r.value === role)?.label}`
-                    )}
-                  </Button>
-
-                  <Box sx={{ textAlign: 'center', mt: 2 }}>
-                    <Button 
-                      variant="outlined" 
-                      size="medium"
-                      onClick={() => fillDemoCredentials(role)}
-                      sx={{ mb: 2 }}
-                    >
-                      Auto-Fill Demo Credentials
-                    </Button>
-                    
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                      <Security sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} />
-                      Secure JWT Authentication • Rate Limited • Encrypted
-                    </Typography>
-
-                    <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {role === 'scout' && "🔍 Need a scout account? Apply through your sports federation"}
-                        {role === 'player' && "⚽ New player? Contact your local sports federation for registration"}
-                        {role === 'federation_admin' && "🏢 Federation admin access requires organization verification"}
-                      </Typography>
-                    </Box>
-
-                    <Button size="small" sx={{ mt: 1 }} color="inherit">
-                      Forgot Password?
-                    </Button>
-                  </Box>
-                </form>
-
-                {/* System Status */}
-                <Box sx={{ mt: 4, p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
-                  <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', color: 'success.800' }}>
-                    <TrendingUp sx={{ fontSize: 16, mr: 1 }} />
-                    System Status: Integration Service Running on Port 3006
-                  </Typography>
-                  <Button 
-                    variant="text" 
-                    size="small" 
-                    onClick={() => window.open('http://localhost:3006/api/status', '_blank')}
-                    sx={{ mt: 1 }}
-                  >
-                    Check Backend Status
-                  </Button>
-                </Box>
-              </Box>
+            <Grid item xs={6}>
+              <Button
+                fullWidth
+                variant="outlined"
+                size="small"
+                onClick={() => handleDemoLogin('admin')}
+              >
+                Admin Demo
+              </Button>
             </Grid>
           </Grid>
         </Paper>
-
-        {/* Footer */}
-        <Box sx={{ mt: 4, textAlign: 'center', color: 'white' }}>
-          <Typography variant="body2" sx={{ opacity: 0.8 }}>
-            © 2024 PlayConnect - Global Sports Talent Platform
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.6 }}>
-            Secure • Verified • AI-Powered
-          </Typography>
-        </Box>
       </Box>
     </Container>
   );
