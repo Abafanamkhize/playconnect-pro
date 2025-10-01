@@ -1,70 +1,5 @@
 version: '3.8'
 services:
-  api-gateway:
-    build: ./backend/api-gateway
-    ports:
-      - "3000:3000"
-    environment:
-      - AUTH_SERVICE_URL=http://auth-service:3002
-      - PLAYER_SERVICE_URL=http://player-service:3003
-      - FILE_SERVICE_URL=http://file-service:3006
-      - INTEGRATION_SERVICE_URL=http://integration-service:3007
-      - FEDERATION_SERVICE_URL=http://federation-service:3005
-    depends_on:
-      - auth-service
-      - player-service
-      - file-service
-      - integration-service
-      - federation-service
-
-  auth-service:
-    build: ./backend/auth-service
-    ports:
-      - "3002:3002"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-      - JWT_SECRET=your-super-secret-jwt-key-here
-    depends_on:
-      - postgres
-
-  player-service:
-    build: ./backend/player-service
-    ports:
-      - "3003:3003"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-    depends_on:
-      - postgres
-
-  file-service:
-    build: ./backend/file-service
-    ports:
-      - "3006:3006"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-    volumes:
-      - ./backend/file-service/uploads:/app/uploads
-    depends_on:
-      - postgres
-
-  integration-service:
-    build: ./backend/integration-service
-    ports:
-      - "3007:3007"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-    depends_on:
-      - postgres
-
-  federation-service:
-    build: ./backend/federation-service
-    ports:
-      - "3005:3005"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-    depends_on:
-      - postgres
-
   postgres:
     image: postgres:14
     environment:
@@ -78,25 +13,3 @@ services:
 
 volumes:
   postgres_data:
-
-  video-service:
-    build: ./backend/video-service
-    ports:
-      - "3008:3008"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-      - JWT_SECRET=your-super-secret-jwt-key-here
-    volumes:
-      - ./backend/video-service/uploads:/app/uploads
-    depends_on:
-      - postgres
-
-  ai-service:
-    build: ./backend/ai-service
-    ports:
-      - "3009:3009"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/playconnect
-      - JWT_SECRET=your-super-secret-jwt-key-here
-    depends_on:
-      - postgres
