@@ -1,25 +1,13 @@
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
+const jwt = require('jsonwebtoken');
 
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-export const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { 
-    expiresIn: JWT_EXPIRES_IN 
+const generateToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET || 'fallback-secret-key', {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };
 
-export const verifyToken = (token) => {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
-    throw new Error('Invalid or expired token');
-  }
+const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
 };
 
-export const decodeToken = (token) => {
-  return jwt.decode(token);
-};
+module.exports = { generateToken, verifyToken };

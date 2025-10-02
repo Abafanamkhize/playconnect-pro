@@ -1,46 +1,31 @@
-import { verifyToken } from '../utils/jwtUtils.js';
-import User from '../models/User.js';
+const jwt = require('jsonwebtoken');
 
-export const authenticateToken = async (req, res, next) => {
+// JWT Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Access token required'
+    });
+  }
+
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access token required'
-      });
-    }
-
-    const decoded = verifyToken(token);
-    const user = await User.findByPk(decoded.userId);
-    
-    if (!user || !user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'User not found or account inactive'
-      });
-    }
-
-    req.user = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      federationId: user.federationId
-    };
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(403).json({
       success: false,
-      message: 'Invalid or expired token',
-      error: error.message
+      message: 'Invalid or expired token'
     });
   }
 };
 
-export const requireRole = (roles) => {
+// Role-based authorization middleware
+const requireRole = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -49,10 +34,10 @@ export const requireRole = (roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Access denied. Required roles: ${roles.join(', ')}`
+        message: 'Insufficient permissions for this action'
       });
     }
 
@@ -60,6 +45,34 @@ export const requireRole = (roles) => {
   };
 };
 
-export const requireFederation = requireRole(['federation', 'admin']);
-export const requireScout = requireRole(['scout', 'admin']);
-export const requireAdmin = requireRole(['admin']);
+// Federation scope middleware (users can only access their federation's data)
+const requireFederationAccess = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required'
+    });
+  }
+
+  // Super admins can access all federations
+  if (req.user.role === 'super_admin') {
+    return next();
+  }
+
+  // Federation admins can only access their own federation
+  const requestedFederationId = req.params.federationId || req.body.federationId;
+  if (requestedFederationId && requestedFederationId !== req.user.federationId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied to this federation'
+    });
+  }
+
+  next();
+};
+
+module.exports = {
+  authenticateToken,
+  requireRole,
+  requireFederationAccess
+};

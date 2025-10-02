@@ -37,7 +37,7 @@ testConnection().then(async (connected) => {
   }
 });
 
-// Routes
+// Routes - MOUNT AUTH ROUTES AT /api
 app.use('/api', authRoutes);
 
 // Health check endpoint

@@ -86,6 +86,17 @@ class AuthController {
     }
   }
 
+  // Continue with other methods (login, verifyEmail, etc.)
+  // ... [rest of the authController methods]
+    } catch (error) {
+      console.error('❌ Registration error:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Registration failed',
+      });
+    }
+  }
+
   // User Login
   async login(req, res) {
     try {

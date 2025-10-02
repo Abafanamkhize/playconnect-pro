@@ -1,13 +1,12 @@
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../config/database.js';
-import bcrypt from 'bcrypt';
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-    field: 'id'
+    primaryKey: true
   },
   email: {
     type: DataTypes.STRING,
@@ -15,55 +14,55 @@ const User = sequelize.define('User', {
     unique: true,
     validate: {
       isEmail: true
-    },
-    field: 'email'
+    }
   },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
       len: [6, 100]
-    },
-    field: 'password'
+    }
   },
   role: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('player', 'scout', 'federation_admin', 'super_admin', 'coach'),
     allowNull: false,
-    defaultValue: 'scout',
-    validate: {
-      isIn: [['federation', 'scout', 'admin']]
-    },
-    field: 'role'
+    defaultValue: 'player'
   },
-  federationId: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    field: 'federationid'  // Match exact column name
+  firstName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  lastName: {
+    type: DataTypes.STRING,
+    allowNull: false
   },
   isActive: {
     type: DataTypes.BOOLEAN,
-    defaultValue: true,
-    field: 'isactive'  // Match exact column name
+    defaultValue: true
+  },
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  verificationToken: {
+    type: DataTypes.STRING
+  },
+  resetPasswordToken: {
+    type: DataTypes.STRING
+  },
+  resetPasswordExpires: {
+    type: DataTypes.DATE
   },
   lastLogin: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    field: 'lastlogin'  // Match exact column name
+    type: DataTypes.DATE
   },
-  createdAt: {
-    type: DataTypes.DATE,
-    field: 'createdat'  // Match exact column name
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    field: 'updatedat'  // Match exact column name
+  federationId: {
+    type: DataTypes.UUID,
+    allowNull: true
   }
 }, {
-  tableName: 'users',
-  timestamps: true,  // Let Sequelize handle timestamps
-  underscored: false,  // We're explicitly defining field names
-  createdAt: 'createdat',
-  updatedAt: 'updatedat',
+  tableName: 'Users',
+  timestamps: true,
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
@@ -83,11 +82,4 @@ User.prototype.validatePassword = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 
-// Instance method to sanitize user data
-User.prototype.toJSON = function() {
-  const values = { ...this.get() };
-  delete values.password;
-  return values;
-};
-
-export default User;
+module.exports = User;
