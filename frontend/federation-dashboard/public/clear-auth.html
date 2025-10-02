@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear PlayConnect Auth</title>
+</head>
+<body>
+    <h2>Clearing PlayConnect Authentication...</h2>
+    <script>
+        localStorage.removeItem('playconnect_token');
+        localStorage.removeItem('playconnect_user');
+        console.log('Authentication data cleared!');
+        alert('Authentication cleared! You will now see the login page.');
+        window.location.href = '/';
+    </script>
+</body>
+</html>
