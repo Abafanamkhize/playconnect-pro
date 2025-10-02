@@ -1,14 +1,18 @@
 const express = require('express');
+<<<<<<< HEAD
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+=======
+const app = express();
+const PORT = 3003;
+>>>>>>> c914a42f12460edeffad269d875cffed32852c9b
 
-// Middleware
-app.use(cors());
 app.use(express.json());
 
+<<<<<<< HEAD
 // In-memory player store for testing
 const players = [];
 
@@ -172,4 +176,19 @@ app.listen(PORT, () => {
   console.log('   POST /players - Create player (federation only)');
   console.log('   GET  /players - Get all players with filtering');
   console.log('   GET  /players/:id - Get player by ID');
+=======
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', service: 'Player Service', port: PORT });
+});
+
+app.get('/api/players', (req, res) => {
+  res.json([
+    { id: 1, firstName: 'Lionel', lastName: 'Messi', position: 'Forward' },
+    { id: 2, firstName: 'Test', lastName: 'Player', position: 'Midfielder' }
+  ]);
+});
+
+app.listen(PORT, () => {
+  console.log(`⚽ Player Service running on port ${PORT}`);
+>>>>>>> c914a42f12460edeffad269d875cffed32852c9b
 });

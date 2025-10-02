@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
@@ -22,6 +23,27 @@ const authenticateToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ error: "Access token required" });
   }
+=======
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3003;
+
+// Enhanced CORS configuration
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json());
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+>>>>>>> c914a42f12460edeffad269d875cffed32852c9b
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
@@ -35,6 +57,7 @@ const authenticateToken = (req, res, next) => {
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ 
+<<<<<<< HEAD
     status: "Auth Service Running", 
     port: PORT,
     timestamp: new Date().toISOString(),
@@ -194,4 +217,20 @@ app.listen(PORT, () => {
   console.log("   POST /api/login - User login");
   console.log("   GET  /api/profile - Get user profile (protected)");
   console.log("   GET  /api/users - List all users (for testing)");
+=======
+    status: 'OK', 
+    service: 'auth-service',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Test endpoint
+app.get('/api/auth/test', (req, res) => {
+  res.json({ message: 'Backend is working!' });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Auth service running on port ${PORT}`);
+  console.log(`Accessible at: http://localhost:${PORT}`);
+>>>>>>> c914a42f12460edeffad269d875cffed32852c9b
 });

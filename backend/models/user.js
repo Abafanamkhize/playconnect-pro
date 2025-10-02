@@ -1,17 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class User extends Model {
-    static associate(models) {
-      User.belongsTo(models.Federation, {
-        foreignKey: 'federationId',
-        as: 'federation'
-      });
-    }
-  }
-  User.init({
+  const User = sequelize.define('User', {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -25,26 +13,33 @@ module.exports = (sequelize, DataTypes) => {
         isEmail: true
       }
     },
-    passwordHash: {
+    password: {
       type: DataTypes.STRING,
       allowNull: false
     },
     role: {
-      type: DataTypes.ENUM('federation_admin', 'scout', 'player', 'system_admin'),
-      allowNull: false,
-      defaultValue: 'player'
+      type: DataTypes.ENUM('player', 'scout', 'federation_admin', 'super_admin'),
+      allowNull: false
     },
-    federationId: {
-      type: DataTypes.UUID,
-      allowNull: true
+    firstName: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
+    },
+    lastLogin: {
+      type: DataTypes.DATE
     }
   }, {
-    sequelize,
-    modelName: 'User',
+    tableName: 'users',
+    timestamps: true
   });
+
   return User;
 };

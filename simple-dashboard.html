@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayConnect Simple Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .player { border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        button { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PlayConnect Simple Dashboard</h1>
+        
+        <div class="card">
+            <h2>System Status</h2>
+            <div id="status">Checking backend...</div>
+            <button onclick="checkHealth()">Check Health</button>
+        </div>
+        
+        <div class="card">
+            <h2>Players</h2>
+            <div id="players">Loading players...</div>
+            <button onclick="loadPlayers()">Load Players</button>
+        </div>
+        
+        <div class="card">
+            <h2>Test Login</h2>
+            <button onclick="testLogin()">Test Authentication</button>
+            <div id="login-result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkHealth() {
+            try {
+                const response = await fetch('http://localhost:3000/api/health');
+                const data = await response.json();
+                document.getElementById('status').innerHTML = 
+                    `<span style="color: green">✅ ${data.status} - ${data.service}</span>`;
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    `<span style="color: red">❌ Backend not available: ${error.message}</span>`;
+            }
+        }
+
+        async function loadPlayers() {
+            try {
+                const response = await fetch('http://localhost:3000/api/players');
+                const players = await response.json();
+                const playersHtml = players.map(player => 
+                    `<div class="player">
+                        <strong>${player.firstName} ${player.lastName}</strong><br>
+                        Position: ${player.position} | Age: ${player.age}
+                    </div>`
+                ).join('');
+                document.getElementById('players').innerHTML = playersHtml;
+            } catch (error) {
+                document.getElementById('players').innerHTML = 
+                    `<span style="color: red">Error loading players: ${error.message}</span>`;
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({email: 'admin@test.com', password: 'test123'})
+                });
+                const data = await response.json();
+                document.getElementById('login-result').innerHTML = 
+                    `<span style="color: green">✅ Login successful! Token: ${data.token}</span>`;
+            } catch (error) {
+                document.getElementById('login-result').innerHTML = 
+                    `<span style="color: red">❌ Login failed: ${error.message}</span>`;
+            }
+        }
+
+        // Auto-check health on load
+        checkHealth();
+    </script>
+</body>
+</html>

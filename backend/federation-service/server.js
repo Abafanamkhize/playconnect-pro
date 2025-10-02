@@ -1,9 +1,13 @@
 const express = require('express');
+<<<<<<< HEAD
 const cors = require('cors');
 
+=======
+>>>>>>> c914a42f12460edeffad269d875cffed32852c9b
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+<<<<<<< HEAD
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -46,6 +50,16 @@ app.get('/federations/:id', (req, res) => {
   }
   
   res.json({ federation });
+=======
+app.use(express.json());
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', service: 'Federation Service', port: PORT });
+});
+
+app.get('/api/federations', (req, res) => {
+  res.json([{ id: 1, name: 'SAFA', country: 'South Africa' }]);
+>>>>>>> c914a42f12460edeffad269d875cffed32852c9b
 });
 
 // Start server
